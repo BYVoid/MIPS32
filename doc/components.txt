@@ -9,7 +9,7 @@
     shamt
     func
     imm
-    addr
+    instIndex
 
 寄存器堆 Register File
   輸入
