@@ -13,13 +13,13 @@
 
 寄存器堆 Register File
   輸入
-    readReg1
-    readReg2
-    writeReg
-    writeData
+    rdReg1
+    rdReg2
+    wrReg
+    wrData
   輸出
-    readData1
-    readData2
+    rdData1
+    rdData2
 
 計算單元 ALU
   輸入
