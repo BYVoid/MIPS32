@@ -1,6 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.Common.all;
 
 entity Memory is
   port (
@@ -8,8 +9,10 @@ entity Memory is
     clk:          in      std_logic;
     rst:          in      std_logic;
     rw:           in      std_logic;
+    length:       in      std_logic_vector (1 downto 0);
     addr:         in      std_logic_vector (31 downto 0);
-    data:         inout   std_logic_vector (31 downto 0);
+    data_in:      in      std_logic_vector (31 downto 0);
+    data_out:     out     std_logic_vector (31 downto 0);
     
     -- Import --
     ram1_en:      out     std_logic;
@@ -28,177 +31,123 @@ entity Memory is
     com_tbre:     in      std_logic;
     com_tsre:     in      std_logic;
     flash_data:   inout   std_logic_vector (15 downto 0);
-    flash_addr:   out     std_logic_vector (22 downto 0)
+    flash_addr:   out     std_logic_vector (22 downto 0);
+    
+    -- Debug --
+    seg7_r_num:   out     std_logic_vector (3 downto 0)
   );
 end Memory;
 
 architecture Behavioral of Memory is
-  component Com is
-    port (
-      -- Interface --
-      clk:          in      std_logic;
-      rst:          in      std_logic;
-      rw:           in      std_logic;
-      data:         inout   std_logic_vector (7 downto 0);
-      ready:        inout   std_logic;
-      -- Import --
-      com_data:     inout   std_logic_vector (7 downto 0);
-      com_ready:    in      std_logic;
-      com_rdn:      out     std_logic;
-      com_wrn:      out     std_logic;
-      com_tbre:     in      std_logic;
-      com_tsre:     in      std_logic
-    );
-  end component;
-
   type StateType is (
     INITIAL,
     RAM_READ_COMPLETE,
-    RAM_WRITTING,
+    RAM_WRITING,
     RAM_COMPLETE,
-    COM_READING_BYTE1,
-    COM_READING_BYTE2,
-    COM_READING_BYTE3,
-    COM_READING_BYTE4,
-    COM_WRITING_BYTE1,
-    COM_WRITING_BYTE2,
-    COM_WRITING_BYTE3,
-    COM_WRITING_BYTE4
+    COM_READING,
+    COM_READ_COMPLETED,
+    COM_WRITING,
+    COM_WRITE_COMPLETED
   );
   
-  signal state, next_state: StateType;
-  signal com_data: std_logic_vector (7 downto 0);
+  signal state: StateType;
   signal ready: std_logic;
 begin
-  com_instance: com port map(
-    clk => clk,
-    rst => rst,
-    rw => rw,
-    data => com_data,
-    ready => ready,
-    com_data => ram1_data(7 downto 0),
-    com_ready => com_ready,
-    com_rdn => com_rdn,
-    com_wrn => com_wrn,
-    com_tbre => com_tbre,
-    com_tsre => com_tsre
-  );
-  
   process(clk, rst)
+    variable actual_addr: std_logic_vector (31 downto 0);
   begin
     if rst = '0' then
       -- Reset
+      ram1_en <= '1';
+      ram2_en <= '1';
+      com_rdn <= '1';
+      com_wrn <= '1';
       state <= INITIAL;
     elsif rising_edge(clk) then
-      state <= next_state;
+      case state is
+        when INITIAL =>
+          seg7_r_num <= "0000"; -- Debug --
+          if addr(31 downto 20) = x"000" then
+            -- RAM
+            ram1_addr <= addr(19 downto 2);
+            ram1_en <= '0';
+            ram2_addr <= addr(19 downto 2);
+            ram2_en <= '0';
+            if rw = '0' then
+              -- Read ram
+              ram1_oe <= '0';
+              ram1_rw <= '1';
+              ram2_oe <= '0';
+              ram2_rw <= '1';
+              state <= RAM_READ_COMPLETE;
+            else
+              -- Write ram
+              ram1_oe <= '1';
+              ram1_rw <= '0';
+              ram1_data <= data_in(15 downto 0);
+              ram2_oe <= '1';
+              ram2_rw <= '0';
+              ram2_data <= data_in(31 downto 16);
+              state <= RAM_WRITING;
+            end if;
+          elsif addr = COM_Address then
+            -- COM --
+            -- Disable Ram to avoid bus confilict --
+            ram1_en <= '1';
+            ram2_en <= '1';
+            if rw = '0' then
+              if com_ready = '1' then
+                com_rdn <= '0';
+                state <= COM_READING;
+              end if;
+            else
+              ram1_data(7 downto 0) <= data_in(7 downto 0);
+              state <= COM_WRITING;
+            end if;
+          else
+            state <= INITIAL;
+          end if;
+        when RAM_READ_COMPLETE =>
+          seg7_r_num <= "0001"; -- Debug --
+          data_out(31 downto 16) <= ram1_data;
+          ram1_data <= Int16_Z;            
+          data_out(15 downto 0) <= ram2_data;
+          ram2_data <= Int16_Z;
+          ram1_oe <= '1';
+          ram2_oe <= '1';
+          state <= RAM_COMPLETE;
+        when RAM_WRITING =>
+          seg7_r_num <= "0010"; -- Debug --
+          ram1_rw <= '1';
+          ram2_rw <= '1';
+          state <= RAM_COMPLETE;
+        when RAM_COMPLETE =>
+          seg7_r_num <= "0011"; -- Debug --
+          ram1_en <= '1';
+          ram2_en <= '1';
+          state <= INITIAL;
+        when COM_READING =>
+          seg7_r_num <= "0100"; -- Debug --
+          ram1_data(7 downto 0) <= Int8_Z;
+          state <= COM_READ_COMPLETED;
+        when COM_READ_COMPLETED =>
+          seg7_r_num <= "0101"; -- Debug --
+          com_rdn <= '1';
+          data_out(7 downto 0) <= ram1_data(7 downto 0);
+          ready <= '1';
+          state <= INITIAL;
+        when COM_WRITING =>
+          seg7_r_num <= "0110"; -- Debug --
+          com_wrn <= '0';
+          if com_tbre = '1' and com_tsre = '1' then
+            state <= COM_WRITE_COMPLETED;
+          end if;
+        when COM_WRITE_COMPLETED =>
+          seg7_r_num <= "0111"; -- Debug --
+          com_wrn <= '1';
+          ready <= '1';
+          state <= INITIAL;
+      end case;
     end if;
   end process;
-  
-  process(state)
-      variable actual_addr: std_logic_vector (31 downto 0);
-  begin
-    case state is
-      when INITIAL =>
-        if addr(31 downto 20) = x"000" then
-          -- RAM
-          ram1_addr <= addr(19 downto 2);
-          ram1_en <= '0';
-          ram2_addr <= addr(19 downto 2);
-          ram2_en <= '0';
-          if rw = '0' then
-            -- Read ram
-            ram1_oe <= '0';
-            ram1_rw <= '1';
-            
-            ram2_oe <= '0';
-            ram2_rw <= '1';
-            
-            next_state <= RAM_READ_COMPLETE;
-          else
-            -- Write ram
-            ram1_oe <= '1';
-            ram1_rw <= '0';
-            ram1_data <= data(31 downto 16);
-            ram2_oe <= '1';
-            ram2_rw <= '0';
-            ram2_data <= data(15 downto 0);
-            next_state <= RAM_WRITTING;
-          end if;
-        elsif addr = x"1FD003F8" then
-          -- COM
-          ready <= '0';
-          if rw = '0' then
-            next_state <= COM_READING_BYTE1;
-          else
-            com_data <= data(31 downto 24);
-            next_state <= COM_WRITING_BYTE1;
-          end if;
-        else
-          next_state <= INITIAL;
-        end if;
-      when RAM_READ_COMPLETE =>
-        data(31 downto 16) <= ram1_data;
-        ram1_data <= "ZZZZZZZZZZZZZZZZ";            
-        data(15 downto 0) <= ram2_data;
-        ram2_data <= "ZZZZZZZZZZZZZZZZ";
-        ram1_oe <= '1';
-        ram2_oe <= '1';
-        next_state <= RAM_COMPLETE;
-      when RAM_WRITTING =>
-        ram1_rw <= '1';
-        ram2_rw <= '1';
-        -- write "Z...Z" to data?
-        next_state <= RAM_WRITE_COMPLETE;
-      when RAM_COMPLETE =>
-        ram1_en <= '1';
-        ram2_en <= '1';
-        next_state <= INITIAL;
-      when COM_READING_BYTE1 =>
-        if ready = '1' then
-          data(31 downto 24) <= com_data;
-          ready <= '0';
-          next_state <= COM_READING_BYTE2;
-        end if;
-      when COM_READING_BYTE2 =>
-        if ready = '1' then
-          data(23 downto 16) <= com_data;
-          ready <= '0';
-          next_state <= COM_READING_BYTE3;
-        end if;
-      when COM_READING_BYTE3 =>
-        if ready = '1' then
-          data(15 downto 8) <= com_data;
-          ready <= '0';
-          next_state <= COM_READING_BYTE4;
-        end if;
-      when COM_READING_BYTE4 =>
-        if ready = '1' then
-          data(7 downto 0) <= com_data;
-          next_state <= INITIAL;
-        end if;
-      when COM_WRITING_BYTE1 =>
-        if ready = '1' then
-          ready <= '0';
-          com_data <= data(23 downto 16);
-          next_state <= COM_WRITING_BYTE2;
-        end if;
-      when COM_WRITING_BYTE2 =>
-        if ready = '1' then
-          ready <= '0';
-          com_data <= data(15 downto 8);
-          next_state <= COM_WRITING_BYTE3;
-        end if;
-      when COM_WRITING_BYTE3 =>
-        if ready = '1' then
-          ready <= '0';
-          com_data <= data(7 downto 0);
-          next_state <= COM_WRITING_BYTE4;
-        end if;
-      when COM_WRITING_BYTE4 =>
-        if ready = '1' then
-          next_state <= INITIAL;
-        end if;
-    end case;
-  end process;
-
 end Behavioral;

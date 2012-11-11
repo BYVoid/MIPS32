@@ -136,10 +136,10 @@ NET "ram2_data[15]" LOC = N11;
 
 NET "ram1_en" LOC = M15;
 NET "ram1_oe" LOC = M16;
-NET "ram1_we" LOC = M18;
+NET "ram1_rw" LOC = M18;
 NET "ram2_en" LOC = N10;
 NET "ram2_oe" LOC = R9;
-NET "ram2_we" LOC = M9;
+NET "ram2_rw" LOC = M9;
 
 NET "flash_data[0]" LOC = J5;
 NET "flash_data[1]" LOC = J4;
