@@ -66,7 +66,9 @@ begin
           ready <= '1';
           state <= INITIAL;
         when WRITTING =>
-          if com_tbre = '1' and com_tbre = '1' then
+	      com_wrn <= '1';
+          com_data <= "ZZZZZZZZ";
+          if com_tbre = '1' and com_tsre = '1' then
             state <= WRITE_COMPLETED;
           end if;
         when WRITE_COMPLETED =>
