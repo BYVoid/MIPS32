@@ -41,9 +41,11 @@ end Memory;
 architecture Behavioral of Memory is
   type StateType is (
     INITIAL,
-    RAM_READ_COMPLETE,
-    RAM_WRITING,
-    RAM_COMPLETE,
+    RAM_READ_1,
+    RAM_READ_2,
+    RAM_WRITE_1,
+    RAM_WRITE_2,
+    RAM_WRITE_3,
     COM_READING,
     COM_READ_COMPLETED,
     COM_WRITING,
@@ -60,6 +62,10 @@ begin
       -- Reset
       ram1_en <= '1';
       ram2_en <= '1';
+      ram1_oe <= '1';
+      ram2_oe <= '1';
+      ram1_rw <= '1';
+      ram2_rw <= '1';
       com_rdn <= '1';
       com_wrn <= '1';
       state <= INITIAL;
@@ -69,26 +75,24 @@ begin
           seg7_r_num <= "0000"; -- Debug --
           if addr(31 downto 20) = x"000" then
             -- RAM
-            ram1_addr <= addr(19 downto 2);
             ram1_en <= '0';
-            ram2_addr <= addr(19 downto 2);
             ram2_en <= '0';
             if rw = '0' then
               -- Read ram
               ram1_oe <= '0';
-              ram1_rw <= '1';
               ram2_oe <= '0';
+              ram1_rw <= '1';
               ram2_rw <= '1';
-              state <= RAM_READ_COMPLETE;
+              ram1_data <= Int16_Z;
+              ram2_data <= Int16_Z;
+              state <= RAM_READ_1;
             else
               -- Write ram
-              ram1_oe <= '1';
-              ram1_rw <= '0';
+              ram1_addr <= addr(19 downto 2);
+              ram2_addr <= addr(19 downto 2);
               ram1_data <= data_in(15 downto 0);
-              ram2_oe <= '1';
-              ram2_rw <= '0';
               ram2_data <= data_in(31 downto 16);
-              state <= RAM_WRITING;
+              state <= RAM_WRITE_1;
             end if;
           elsif addr = COM_Address then
             -- COM --
@@ -107,21 +111,29 @@ begin
           else
             state <= INITIAL;
           end if;
-        when RAM_READ_COMPLETE =>
+        when RAM_READ_1 =>
           seg7_r_num <= "0001"; -- Debug --
+          ram1_addr <= addr(19 downto 2);
+          ram2_addr <= addr(19 downto 2);
+          state <= RAM_READ_2;
+        when RAM_READ_2 =>
           data_out(31 downto 16) <= ram1_data;
-          ram1_data <= Int16_Z;            
           data_out(15 downto 0) <= ram2_data;
-          ram2_data <= Int16_Z;
+          ram1_en <= '1';
+          ram2_en <= '1';
+          state <= INITIAL;
+        when RAM_WRITE_1 =>
+          seg7_r_num <= "0010"; -- Debug --
           ram1_oe <= '1';
           ram2_oe <= '1';
-          state <= RAM_COMPLETE;
-        when RAM_WRITING =>
-          seg7_r_num <= "0010"; -- Debug --
+          ram1_rw <= '0';
+          ram2_rw <= '0';
+          state <= RAM_WRITE_2;
+        when RAM_WRITE_2 =>
           ram1_rw <= '1';
           ram2_rw <= '1';
-          state <= RAM_COMPLETE;
-        when RAM_COMPLETE =>
+          state <= RAM_WRITE_3;
+        when RAM_WRITE_3 =>
           seg7_r_num <= "0011"; -- Debug --
           ram1_en <= '1';
           ram2_en <= '1';
