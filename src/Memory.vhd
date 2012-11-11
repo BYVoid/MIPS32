@@ -55,7 +55,7 @@ architecture Behavioral of Memory is
     INITIAL,
     RAM_READ_COMPLETE,
     RAM_WRITTING,
-    RAM_WRITE_COMPLETE,
+    RAM_COMPLETE,
     COM_READING_BYTE1,
     COM_READING_BYTE2,
     COM_READING_BYTE3,
@@ -95,24 +95,24 @@ begin
   end process;
   
   process(state)
-	  variable actual_addr: std_logic_vector (31 downto 0);
+      variable actual_addr: std_logic_vector (31 downto 0);
   begin
     case state is
       when INITIAL =>
         if addr(31 downto 20) = x"000" then
           -- RAM
-          ram1_addr <= addr(17 downto 0);
+          ram1_addr <= addr(19 downto 2);
           ram1_en <= '0';
-          ram2_addr <= addr(17 downto 0);
+          ram2_addr <= addr(19 downto 2);
           ram2_en <= '0';
           if rw = '0' then
             -- Read ram
             ram1_oe <= '0';
             ram1_rw <= '1';
-            ram1_data <= "ZZZZZZZZZZZZZZZZ";
+            
             ram2_oe <= '0';
             ram2_rw <= '1';
-            ram2_data <= "ZZZZZZZZZZZZZZZZ";
+            
             next_state <= RAM_READ_COMPLETE;
           else
             -- Write ram
@@ -138,15 +138,18 @@ begin
         end if;
       when RAM_READ_COMPLETE =>
         data(31 downto 16) <= ram1_data;
+        ram1_data <= "ZZZZZZZZZZZZZZZZ";            
         data(15 downto 0) <= ram2_data;
-        ram1_en <= '1';
-        ram2_en <= '1';
-        next_state <= INITIAL;
+        ram2_data <= "ZZZZZZZZZZZZZZZZ";
+        ram1_oe <= '1';
+        ram2_oe <= '1';
+        next_state <= RAM_COMPLETE;
       when RAM_WRITTING =>
         ram1_rw <= '1';
         ram2_rw <= '1';
+        -- write "Z...Z" to data?
         next_state <= RAM_WRITE_COMPLETE;
-      when RAM_WRITE_COMPLETE =>
+      when RAM_COMPLETE =>
         ram1_en <= '1';
         ram2_en <= '1';
         next_state <= INITIAL;
