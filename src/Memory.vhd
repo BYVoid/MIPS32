@@ -35,29 +35,8 @@ entity Memory is
     
     -- Debug --
     seg7_r_num:   out     std_logic_vector (3 downto 0)
-    );
+  );
 end Memory;
-
-architecture VirtualBehav of Memory is
-  constant NUM_CELLS: integer := 256;
-  type VirtualMemoryType is array(0 to NUM_CELLS - 1) of Int32;
-  signal memories: VirtualMemoryType;
-begin
-  process(clk, rst)
-  begin
-    if rst = '0' then
-      -- Reset
-    elsif rising_edge(clk) then
-      if rw = '0' then
-        -- Read ram
-        data_out <= memories(to_integer(unsigned(addr)));
-      else
-        -- Write ram
-        memories(to_integer(unsigned(addr))) <= data_in;
-      end if;
-    end if;
-  end process;
-end VirtualBehav;
 
 architecture Behavioral of Memory is
   type StateType is (
@@ -71,7 +50,7 @@ architecture Behavioral of Memory is
     COM_READ_COMPLETED,
     COM_WRITING,
     COM_WRITE_COMPLETED
-    );
+  );
   
   signal state: StateType;
   signal ready: std_logic;
