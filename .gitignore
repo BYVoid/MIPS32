@@ -3,3 +3,5 @@ CPU_summary.html
 CPU.xreport
 *.gise
 *~
+*.cf
+work/
