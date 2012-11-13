@@ -8,11 +8,11 @@ entity Memory is
     -- Interface --
     clk:          in      std_logic;
     rst:          in      std_logic;
-    rw:           in      std_logic;
-    length:       in      std_logic_vector (1 downto 0);
-    addr:         in      std_logic_vector (31 downto 0);
-    data_in:      in      std_logic_vector (31 downto 0);
-    data_out:     out     std_logic_vector (31 downto 0);
+    rw:           in      bit;
+    length:       in      unsigned (1 downto 0); -- define a custom type
+    addr:         in      unsigned (31 downto 0);
+    data_in:      in      unsigned (31 downto 0);
+    data_out:     out     unsigned (31 downto 0);
     
     -- Import --
     ram1_en:      out     std_logic;
@@ -37,27 +37,6 @@ entity Memory is
     seg7_r_num:   out     std_logic_vector (3 downto 0)
     );
 end Memory;
-
-architecture VirtualBehav of Memory is
-  constant NUM_CELLS: integer := 256;
-  type VirtualMemoryType is array(0 to NUM_CELLS - 1) of Int32;
-  signal memories: VirtualMemoryType;
-begin
-  process(clk, rst)
-  begin
-    if rst = '0' then
-      -- Reset
-    elsif rising_edge(clk) then
-      if rw = '0' then
-        -- Read ram
-        data_out <= memories(to_integer(unsigned(addr)));
-      else
-        -- Write ram
-        memories(to_integer(unsigned(addr))) <= data_in;
-      end if;
-    end if;
-  end process;
-end VirtualBehav;
 
 architecture Behavioral of Memory is
   type StateType is (
