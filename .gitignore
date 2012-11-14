@@ -1,7 +1,9 @@
+work/
 _xmsgs
 CPU_summary.html
 CPU.xreport
 *.gise
 *~
+#*#
 *.cf
-work/
+transcript
