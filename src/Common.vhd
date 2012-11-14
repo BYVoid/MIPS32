@@ -3,6 +3,9 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 package Common is
+  type RwType is (R, W);
+  type LenType is (Lword, Lhalf, Lbyte);
+
   subtype Int32 is std_logic_vector(31 downto 0);
   subtype Int31 is std_logic_vector(30 downto 0);
   subtype Int16 is std_logic_vector(15 downto 0);
