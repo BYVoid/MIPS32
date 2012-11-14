@@ -47,14 +47,14 @@ architecture Behavioral of System is
     port (
       clk          : in  std_logic;
       rst          : in  std_logic;
-      debug        : out line;
+      debug        : in  boolean;
 
       -- RAM
-      ram_rw       : in  RwType;
-      ram_length   : in  LenType;
-      ram_addr     : in  std_logic_vector (31 downto 0);
-      ram_data_in  : in  std_logic_vector (31 downto 0);
-      ram_data_out : out std_logic_vector (31 downto 0));
+      ram_rw       : out RwType;
+      ram_length   : out LenType;
+      ram_addr     : out std_logic_vector (31 downto 0);
+      ram_data_in  : out std_logic_vector (31 downto 0);
+      ram_data_out : in  std_logic_vector (31 downto 0));
   end component;
   component Memory is
     port (
