@@ -10,7 +10,6 @@ architecture Behavioral of System_sim is
     port (
       clk   : in std_logic;
       rst   : in std_logic;
-      debug : in boolean;
 
       -- RAM
       ram_rw       : out RwType;
@@ -48,7 +47,6 @@ begin
     port map (
       clk          => clk,
       rst          => rst,
-      debug        => true,
       ram_rw       => ram_rw,
       ram_length   => ram_length,
       ram_addr     => ram_addr,

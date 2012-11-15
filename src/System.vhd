@@ -47,7 +47,6 @@ architecture Behavioral of System is
     port (
       clk          : in  std_logic;
       rst          : in  std_logic;
-      debug        : in  boolean;
 
       -- RAM
       ram_rw       : out RwType;

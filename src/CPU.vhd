@@ -7,7 +7,6 @@ entity CPU is
   port (
     clk   : in std_logic;
     rst   : in std_logic;
-    debug : in boolean;
 
     -- RAM
     ram_rw       : out RwType;
@@ -28,15 +27,11 @@ begin
   begin
     if rst = '0' then
       --reset
-      if debug then
-        write(L, string'("booting"));
-        writeline(output, L);
-      end if;
+      write(L, string'("booting"));
+      writeline(output, L);
     elsif rising_edge(clk) then
-      if debug then
-        write(L, string'("tick"));
-        writeline(output, L);
-      end if;
+      write(L, string'("tick"));
+      writeline(output, L);
     end if;
   end process;
   
