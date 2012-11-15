@@ -8,8 +8,8 @@ entity Memory is
     -- Interface --
     clk:          in      std_logic;
     rst:          in      std_logic;
-    rw:           in      std_logic;
-    length:       in      std_logic_vector (1 downto 0);
+    rw:           in      RwType;
+    length:       in      LenType;
     addr:         in      std_logic_vector (31 downto 0);
     data_in:      in      std_logic_vector (31 downto 0);
     data_out:     out     std_logic_vector (31 downto 0);
@@ -35,7 +35,7 @@ entity Memory is
     
     -- Debug --
     seg7_r_num:   out     std_logic_vector (3 downto 0)
-  );
+    );
 end Memory;
 
 architecture Behavioral of Memory is
@@ -50,7 +50,7 @@ architecture Behavioral of Memory is
     COM_READ_COMPLETED,
     COM_WRITING,
     COM_WRITE_COMPLETED
-  );
+    );
   
   signal state: StateType;
   signal ready: std_logic;
@@ -77,7 +77,7 @@ begin
             -- RAM
             ram1_en <= '0';
             ram2_en <= '0';
-            if rw = '0' then
+            if rw = R then
               -- Read ram
               ram1_oe <= '0';
               ram2_oe <= '0';
@@ -99,7 +99,7 @@ begin
             -- Disable Ram to avoid bus confilict --
             ram1_en <= '1';
             ram2_en <= '1';
-            if rw = '0' then
+            if rw = R then
               if com_ready = '1' then
                 com_rdn <= '0';
                 state <= COM_READING;
@@ -146,6 +146,7 @@ begin
           seg7_r_num <= "0101"; -- Debug --
           com_rdn <= '1';
           data_out(7 downto 0) <= ram1_data(7 downto 0);
+          data_out(31 downto 8) <= Int16_Zero & Int8_Zero;
           ready <= '1';
           state <= INITIAL;
         when COM_WRITING =>

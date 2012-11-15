@@ -8,7 +8,7 @@ entity RegisterFile is
     -- Interface --
     clk:          in      std_logic;
     rst:          in      std_logic;
-    rw:           in      std_logic;
+    rw:           in      RwType;
     rdReg1:       in      std_logic_vector (4 downto 0);
     rdReg2:       in      std_logic_vector (4 downto 0);
     wrReg:        in      std_logic_vector (4 downto 0);
@@ -30,13 +30,15 @@ begin
         registers(i) <= Int32_Zero;
       end loop;
     elsif rising_edge(clk) then
-      if rw = '0' then
+      if rw = R then
         -- Read register --
         rdData1 <= registers(to_integer(unsigned(rdReg1)));
         rdData2 <= registers(to_integer(unsigned(rdReg2)));
       else
         -- Write register --
-        registers(to_integer(unsigned(wrReg))) <= wrData;
+        if wrReg /= "00000" then
+          registers(to_integer(unsigned(wrReg))) <= wrData;
+        end if;
       end if;
     end if;
   end process;
