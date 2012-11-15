@@ -6,10 +6,10 @@ use work.Common.all;
 entity AluOpEncoder is
   port (
     -- Interface --
-    op     : in  std_logic_vector(5 downto 0);
-    func   : in  std_logic_vector(5 downto 0);
-    rt     : in  std_logic_vector(4 downto 0);
-    aluop  : out AluOpType
+    op    : in  std_logic_vector(5 downto 0);
+    func  : in  std_logic_vector(5 downto 0);
+    rt    : in  std_logic_vector(4 downto 0);
+    aluop : out AluOpType
     );
 end AluOpEncoder;
 
@@ -19,75 +19,71 @@ begin
   begin
     case op is
       -- R-Type
-      when "000000" =>
+      when op_special =>
         case func is
-          when "000000" =>              -- sll
+          when func_sll =>
             aluop <= ALU_SLL;
-          when "000010" =>              -- srl
+          when func_srl =>
             aluop <= ALU_SRL;
-          when "000011" =>              -- sra
+          when func_sra =>
             aluop <= ALU_SRA;
-          when "000100" =>              -- sllv
+          when func_sllv =>
             aluop <= ALU_SLL;
-          when "000110" =>              -- srlv
+          when func_srlv =>
             aluop <= ALU_SRL;
-          when "000111" =>              -- srav
+          when func_srav =>
             aluop <= ALU_SRA;
-          when "100001" =>              -- addu
+          when func_addu =>
             aluop <= ALU_ADD;
-          when "100011" =>              -- subu
+          when func_subu =>
             aluop <= ALU_SUB;
-          when "100100" =>              -- and
+          when func_and =>
             aluop <= ALU_AND;
-          when "100101" =>              -- or
+          when func_or =>
             aluop <= ALU_OR;
-          when "100110" =>              -- xor
+          when func_xor =>
             aluop <= ALU_XOR;
-          when "100111" =>              -- nor
+          when func_nor =>
             aluop <= ALU_NOR;
-          when "101010" =>              -- slt
+          when func_slt =>
             aluop <= ALU_LT;
-          when "101011" =>              -- sltu
+          when func_sltu =>
             aluop <= ALU_LTU;
           when others =>
             -- alu not needed
         end case;
-      when "000001" =>
+      when op_regimm =>
         case rt is
-          when "00000" =>               -- bltz
+          when rt_bltz =>
             aluop <= ALU_LT;
-          when "00001" =>               -- bgez
+          when rt_bgez =>
             aluop <= ALU_GEZ;
           when others =>
             -- alu not needed
         end case;
-      when "000100" =>                  -- beq
+      when op_beq =>
         aluop <= ALU_EQ;
-      when "000101" =>                  -- bne
+      when op_bne =>
         aluop <= ALU_NE;
-      when "000110" =>                  -- blez
+      when op_blez =>
         aluop <= ALU_LEZ;
-      when "000111" =>                  -- bgtz
+      when op_bgtz =>
         aluop <= ALU_GTZ;
-      when "001001" =>                  -- addiu
+      when op_addiu =>
         aluop <= ALU_ADD;
-      when "001010" =>                  -- slti
+      when op_slti =>
         aluop <= ALU_LT;
-      when "001011" =>                  -- sltiu
+      when op_sltiu =>
         aluop <= ALU_LTU;
-      when "001100" =>                  -- andi
+      when op_andi =>
         aluop <= ALU_AND;
-      when "001101" =>                  -- ori
+      when op_ori =>
         aluop <= ALU_OR;
-      when "001110" =>                  -- xori
+      when op_xori =>
         aluop <= ALU_XOR;
-      when "001111" =>                  -- lui
+      when op_lui =>
         aluop <= ALU_SLL;
-      when "100000"                     -- lb
-                 | "100011"             -- lw
-                 | "100100"             -- lbu
-                 | "101000"             -- sb
-                 | "101011" =>          -- sw
+      when op_lb | op_lw | op_lbu | op_sb | op_sw =>
         aluop <= ALU_ADD;
       when others =>
         --alu not needed

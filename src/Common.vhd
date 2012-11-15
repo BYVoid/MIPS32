@@ -12,11 +12,12 @@ package Common is
     ALU_EQ, ALU_NE,
     ALU_LT, ALU_LTU,
     ALU_GTZ, ALU_LEZ, ALU_GEZ);
-  
+
   subtype Int32 is std_logic_vector(31 downto 0);
   subtype Int31 is std_logic_vector(30 downto 0);
   subtype Int16 is std_logic_vector(15 downto 0);
   subtype Int8  is std_logic_vector(7  downto 0);
+  subtype Int6  is std_logic_vector(5  downto 0);
   subtype Int5  is std_logic_vector(4  downto 0);
   subtype Int4  is std_logic_vector(3  downto 0);
   
@@ -31,28 +32,58 @@ package Common is
   constant Int32_Zero:    Int32 := "00000000000000000000000000000000";
   constant Int32_Z:       Int32 := "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ";
   constant COM_Address:   Int32 := x"1FD003F8";
-  
-  constant OP_AND:        Int5  := "00000";
-  constant OP_OR:         Int5  := "00001";
-  constant OP_XOR:        Int5  := "00010";
-  constant OP_NOR:        Int5  := "00011";
-  constant OP_NOT:        Int5  := "00100";
-  constant OP_PLUS:       Int5  := "00101";
-  constant OP_MINUS:      Int5  := "00110";
-  constant OP_SRL:        Int5  := "00111";
-  constant OP_SRA:        Int5  := "01000";
-  constant OP_SLL:        Int5  := "01001";
-  constant OP_EQ:         Int5  := "01010";
-  constant OP_NE:         Int5  := "01011";
-  constant OP_LTU:        Int5  := "01100";
-  constant OP_LT:         Int5  := "01101";
-  constant OP_GTU:        Int5  := "01110";
-  constant OP_GT:         Int5  := "01111";
-  constant OP_LTEU:       Int5  := "10000";
-  constant OP_LTE:        Int5  := "10001";
-  constant OP_GTEU:       Int5  := "10010";
-  constant OP_GTE:        Int5  := "10011";
-  constant OP_INVALID:    Int5  := "11111";
+
+  -- opcode
+  constant op_special : Int6 := "000000";
+  constant op_regimm  : Int6 := "000001";
+  constant op_j       : Int6 := "000010";
+  constant op_jal     : Int6 := "000011";
+  constant op_beq     : Int6 := "000100";
+  constant op_bne     : Int6 := "000101";
+  constant op_bgtz    : Int6 := "000111";
+  constant op_addiu   : Int6 := "001001";
+  constant op_slti    : Int6 := "001010";
+  constant op_sltiu   : Int6 := "001011";
+  constant op_andi    : Int6 := "001100";
+  constant op_ori     : Int6 := "001101";
+  constant op_xori    : Int6 := "001110";
+  constant op_lui     : Int6 := "001111";
+  constant op_lb      : Int6 := "100000";
+  constant op_lh      : Int6 := "100001";
+  constant op_lw      : Int6 := "100011";
+  constant op_lbu     : Int6 := "100100";
+  constant op_sb      : Int6 := "101000";
+  constant op_sh      : Int6 := "101001";
+  constant op_sw      : Int6 := "101011";
+
+  -- func
+  constant func_sll     : Int6 := "000000";
+  constant func_srl     : Int6 := "000010";
+  constant func_sra     : Int6 := "000011";
+  constant func_sllv    : Int6 := "000100";
+  constant func_srlv    : Int6 := "000110";
+  constant func_srav    : Int6 := "000111";
+  constant func_jr      : Int6 := "001000";
+  constant func_jalr    : Int6 := "001001";
+  constant func_syscall : Int6 := "001100";
+  constant func_mfhi    : Int6 := "010000";
+  constant func_mthi    : Int6 := "010001";
+  constant func_mflo    : Int6 := "010010";
+  constant func_mtlo    : Int6 := "010100";
+  constant func_mult    : Int6 := "011000";
+  constant func_multu   : Int6 := "011001";
+  constant func_addu    : Int6 := "100001";
+  constant func_subu    : Int6 := "100011";
+  constant func_and     : Int6 := "100100";
+  constant func_or      : Int6 := "100101";
+  constant func_xor     : Int6 := "100110";
+  constant func_nor     : Int6 := "100111";
+  constant func_slt     : Int6 := "101010";
+  constant func_sltu    : Int6 := "101011";
+
+  -- rt
+  constant rt_bltz : Int5 := "00000";
+  constant rt_bgez : Int5 := "00001";
   
   function boolean_to_std_logic(cond: boolean) return std_logic;
 
