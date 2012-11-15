@@ -24,45 +24,45 @@ begin
     op1_us := unsigned(operand1);
     op2_us := unsigned(operand2);
     case operator is
-      when "00000" =>
+      when OP_AND =>
         result <= operand1 and operand2;
-      when "00001" =>
+      when OP_OR =>
         result <= operand1 or operand2;
-      when "00010" =>
+      when OP_XOR =>
         result <= operand1 xor operand2;
-      when "00011" =>
+      when OP_NOR =>
         result <= operand1 nor operand2;
-      when "00100" =>
+      when OP_NOT =>
         result <= not operand1;
-      when "00101" => -- plus
+      when OP_PLUS => -- plus
         result <= std_logic_vector(op1_us + op2_us);
-      when "00110" => -- minus
+      when OP_MINUS => -- minus
         result <= std_logic_vector(op1_us - op2_us);
-      when "00111" => -- shift right logic
+      when OP_SRL => -- shift right logic
         result <= std_logic_vector(shift_right(op1_us, to_integer(op2_us)));
-      when "01000" => -- shift right arithmetic
+      when OP_SRA => -- shift right arithmetic
         result <= std_logic_vector(shift_right(op1_s, to_integer(op2_us)));
-      when "01001" => -- shift left logic
+      when OP_SLL => -- shift left logic
         result <= std_logic_vector(shift_left(op1_us, to_integer(op2_us)));
-      when "01010" => -- equal
+      when OP_EQ => -- equal
         result <= Int31_Zero & boolean_to_std_logic(operand1 = operand2);
-      when "01011" => -- not equal
+      when OP_NE => -- not equal
         result <= Int31_Zero & boolean_to_std_logic(operand1 /= operand2);
-      when "01100" => -- less than (unsigned)
+      when OP_LTU => -- less than (unsigned)
         result <= Int31_Zero & boolean_to_std_logic(op1_us < op2_us);
-      when "01101" => -- less than (signed)
+      when OP_LT => -- less than (signed)
         result <= Int31_Zero & boolean_to_std_logic(op1_s < op2_s);
-      when "01110" => -- greater than (unsigned)
+      when OP_GTU => -- greater than (unsigned)
         result <= Int31_Zero & boolean_to_std_logic(op1_us > op2_us);
-      when "01111" => -- greater than (signed)
+      when OP_GT => -- greater than (signed)
         result <= Int31_Zero & boolean_to_std_logic(op1_s > op2_s);
-      when "10000" => -- less than or equal (unsigned)
+      when OP_LTEU => -- less than or equal (unsigned)
         result <= Int31_Zero & boolean_to_std_logic(op1_us <= op2_us);
-      when "10001" => -- less than or equal (signed)
+      when OP_LTE => -- less than or equal (signed)
         result <= Int31_Zero & boolean_to_std_logic(op1_s <= op2_s);
-      when "10010" => -- greater than or equal (unsigned)
+      when OP_GTEU => -- greater than or equal (unsigned)
         result <= Int31_Zero & boolean_to_std_logic(op1_us >= op2_us);
-      when "10011" => -- greater than or equal (signed)
+      when OP_GTE => -- greater than or equal (signed)
         result <= Int31_Zero & boolean_to_std_logic(op1_s >= op2_s);
       when others =>
         result <= Int32_Zero;

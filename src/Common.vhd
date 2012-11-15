@@ -7,6 +7,7 @@ package Common is
   subtype Int31 is std_logic_vector(30 downto 0);
   subtype Int16 is std_logic_vector(15 downto 0);
   subtype Int8  is std_logic_vector(7  downto 0);
+  subtype Int5  is std_logic_vector(4  downto 0);
   subtype Int4  is std_logic_vector(3  downto 0);
   
   subtype Signed32 is signed(31 downto 0);
@@ -21,8 +22,27 @@ package Common is
   constant Int32_Z:       Int32 := "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ";
   constant COM_Address:   Int32 := x"1FD003F8";
   
-  constant BF00          : Int16 := "1011111100000000";
-  constant BF01          : Int16 := "1011111100000001";
+  constant OP_AND:        Int5  := "00000";
+  constant OP_OR:         Int5  := "00001";
+  constant OP_XOR:        Int5  := "00010";
+  constant OP_NOR:        Int5  := "00011";
+  constant OP_NOT:        Int5  := "00100";
+  constant OP_PLUS:       Int5  := "00101";
+  constant OP_MINUS:      Int5  := "00110";
+  constant OP_SRL:        Int5  := "00111";
+  constant OP_SRA:        Int5  := "01000";
+  constant OP_SLL:        Int5  := "01001";
+  constant OP_EQ:         Int5  := "01010";
+  constant OP_NE:         Int5  := "01011";
+  constant OP_LTU:        Int5  := "01100";
+  constant OP_LT:         Int5  := "01101";
+  constant OP_GTU:        Int5  := "01110";
+  constant OP_GT:         Int5  := "01111";
+  constant OP_LTEU:       Int5  := "10000";
+  constant OP_LTE:        Int5  := "10001";
+  constant OP_GTEU:       Int5  := "10010";
+  constant OP_GTE:        Int5  := "10011";
+  constant OP_INVALID:    Int5  := "11111";
   
   function boolean_to_std_logic(cond: boolean) return std_logic;
 
