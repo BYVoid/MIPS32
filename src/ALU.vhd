@@ -6,66 +6,83 @@ use work.Common.all;
 entity ALU is
   port (
     -- Interface --
-    operator:     in      std_logic_vector(4 downto 0);
-    operand1:     in      std_logic_vector(31 downto 0);
-    operand2:     in      std_logic_vector(31 downto 0);
-    result:       out     std_logic_vector(31 downto 0)
-  );
+    aluop    : in  AluOpType;
+    operand1 : in  std_logic_vector(31 downto 0);
+    operand2 : in  std_logic_vector(31 downto 0);
+    result   : out std_logic_vector(31 downto 0)
+    );
 end ALU;
 
 architecture Behavioral of ALU is
 begin
   process(operand1, operand2)
-    variable op1_s, op2_s: Signed32;
-    variable op1_us, op2_us: Unsigned32;
+    variable op1_s, op2_s   : Signed32;
+    variable op1_us, op2_us : Unsigned32;
+    variable sham           : integer;
   begin
-    op1_s := signed(operand1);
-    op2_s := signed(operand2);
+    op1_s  := signed(operand1);
+    op2_s  := signed(operand2);
     op1_us := unsigned(operand1);
     op2_us := unsigned(operand2);
-    case operator is
-      when "00000" =>
+    sham   := to_integer(op1_us(4 downto 0));
+
+    case aluop is
+      -- logical
+      when ALU_AND =>
         result <= operand1 and operand2;
-      when "00001" =>
+      when ALU_OR =>
         result <= operand1 or operand2;
-      when "00010" =>
+      when ALU_XOR =>
         result <= operand1 xor operand2;
-      when "00011" =>
+      when ALU_NOR =>
         result <= operand1 nor operand2;
-      when "00100" =>
-        result <= not operand1;
-      when "00101" => -- plus
+
+        -- arithmetic
+      when ALU_ADD =>                   -- plus
         result <= std_logic_vector(op1_us + op2_us);
-      when "00110" => -- minus
+      when ALU_SUB =>                   -- minus
         result <= std_logic_vector(op1_us - op2_us);
-      when "00111" => -- shift right logic
-        result <= std_logic_vector(shift_right(op1_us, to_integer(op2_us)));
-      when "01000" => -- shift right arithmetic
-        result <= std_logic_vector(shift_right(op1_s, to_integer(op2_us)));
-      when "01001" => -- shift left logic
-        result <= std_logic_vector(shift_left(op1_us, to_integer(op2_us)));
-      when "01010" => -- equal
+
+        -- shift
+      when ALU_SRL =>                   -- shift right logic
+        result <= std_logic_vector(shift_right(op2_us, sham));
+      when ALU_SRA =>                   -- shift right arithmetic
+        result <= std_logic_vector(shift_right(op2_s, sham));
+      when ALU_SLL =>                   -- shift left logic
+        result <= std_logic_vector(shift_left(op2_us, sham));
+
+        -- compare
+      when ALU_EQ =>                    -- equal
         result <= Int31_Zero & boolean_to_std_logic(operand1 = operand2);
-      when "01011" => -- not equal
+      when ALU_NE =>                   -- not equal
         result <= Int31_Zero & boolean_to_std_logic(operand1 /= operand2);
-      when "01100" => -- less than (unsigned)
+      when ALU_LTU =>                   -- less than (unsigned)
         result <= Int31_Zero & boolean_to_std_logic(op1_us < op2_us);
-      when "01101" => -- less than (signed)
+      when ALU_LT =>                    -- less than (signed)
         result <= Int31_Zero & boolean_to_std_logic(op1_s < op2_s);
-      when "01110" => -- greater than (unsigned)
-        result <= Int31_Zero & boolean_to_std_logic(op1_us > op2_us);
-      when "01111" => -- greater than (signed)
-        result <= Int31_Zero & boolean_to_std_logic(op1_s > op2_s);
-      when "10000" => -- less than or equal (unsigned)
-        result <= Int31_Zero & boolean_to_std_logic(op1_us <= op2_us);
-      when "10001" => -- less than or equal (signed)
-        result <= Int31_Zero & boolean_to_std_logic(op1_s <= op2_s);
-      when "10010" => -- greater than or equal (unsigned)
-        result <= Int31_Zero & boolean_to_std_logic(op1_us >= op2_us);
-      when "10011" => -- greater than or equal (signed)
-        result <= Int31_Zero & boolean_to_std_logic(op1_s >= op2_s);
-      when others =>
-        result <= Int32_Zero;
+      when ALU_GTZ =>                   -- greater than zero
+        result <= Int31_Zero & boolean_to_std_logic(op1_s > signed(Int32_Zero));
+      when ALU_LEZ =>                   -- less than or equal to zero
+        result <= Int31_Zero & boolean_to_std_logic(op1_s <= signed(Int32_Zero));
+      when ALU_GEZ =>                   -- greater than or equal to zero
+        result <= Int31_Zero & boolean_to_std_logic(op1_s >= signed(Int32_Zero));
+
+        -- not needed now      
+        --when ALU_NOT =>
+        --  result <= not operand1;
+        --when ALU_GTU =>                   -- greater than (unsigned)
+        --  result <= Int31_Zero & boolean_to_std_logic(op1_us > op2_us);
+        --when ALU_GT =>                    -- greater than (signed)
+        --  result <= Int31_Zero & boolean_to_std_logic(op1_s > op2_s);
+        --when ALU_LEU =>                   -- less than or equal (unsigned)
+        --  result <= Int31_Zero & boolean_to_std_logic(op1_us <= op2_us);
+        --when ALU_LE =>                    -- less than or equal (signed)
+        --  result <= Int31_Zero & boolean_to_std_logic(op1_s <= op2_s);
+        --when ALU_GEU =>                   -- greater than or equal (unsigned)
+        --  result <= Int31_Zero & boolean_to_std_logic(op1_us >= op2_us);
+        --when ALU_GE =>                    -- greater than or equal (signed)
+        --  result <= Int31_Zero & boolean_to_std_logic(op1_s >= op2_s);
+        
     end case;
   end process;
 end Behavioral;

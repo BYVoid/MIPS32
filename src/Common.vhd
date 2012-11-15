@@ -5,7 +5,14 @@ use ieee.numeric_std.all;
 package Common is
   type RwType is (R, W);
   type LenType is (Lword, Lhalf, Lbyte);
-
+  type AluOpType is (
+    ALU_AND, ALU_OR, ALU_XOR, ALU_NOR,
+    ALU_ADD, ALU_SUB,
+    ALU_SRL, ALU_SRA, ALU_SLL,
+    ALU_EQ, ALU_NE,
+    ALU_LT, ALU_LTU,
+    ALU_GTZ, ALU_LEZ, ALU_GEZ);
+  
   subtype Int32 is std_logic_vector(31 downto 0);
   subtype Int31 is std_logic_vector(30 downto 0);
   subtype Int16 is std_logic_vector(15 downto 0);
