@@ -6,7 +6,7 @@ use work.Common.all;
 entity AluOpEncoder is
   port (
     -- Interface --
-    opcode : in  std_logic_vector(5 downto 0);
+    op     : in  std_logic_vector(5 downto 0);
     func   : in  std_logic_vector(5 downto 0);
     rt     : in  std_logic_vector(4 downto 0);
     aluop  : out AluOpType
@@ -17,7 +17,7 @@ architecture Behavioral of AluOpEncoder is
 begin
   process
   begin
-    case opcode is
+    case op is
       -- R-Type
       when "000000" =>
         case func is
