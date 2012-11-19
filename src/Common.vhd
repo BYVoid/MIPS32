@@ -40,6 +40,7 @@ package Common is
   constant op_jal     : Int6 := "000011";
   constant op_beq     : Int6 := "000100";
   constant op_bne     : Int6 := "000101";
+  constant op_blez    : Int6 := "000110";
   constant op_bgtz    : Int6 := "000111";
   constant op_addiu   : Int6 := "001001";
   constant op_slti    : Int6 := "001010";
