@@ -182,3 +182,10 @@ NET "flash_addr[20]" LOC = K6;
 NET "flash_addr[21]" LOC = K5;
 NET "flash_addr[22]" LOC = K4;
 
+NET "flash_byte" LOC = C1;
+NET "flash_vpen" LOC = C2;
+NET "flash_ce" LOC = E4;
+NET "flash_oe" LOC = E1;
+NET "flash_we" LOC = D4;
+NET "flash_rp" LOC = D1;
+

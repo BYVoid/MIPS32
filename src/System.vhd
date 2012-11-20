@@ -37,6 +37,12 @@ entity System is
     com_tsre:     in      std_logic;
     
     -- Flash --
+    flash_byte:   out     std_logic;
+    flash_vpen:   out     std_logic;
+    flash_ce:     out     std_logic;
+    flash_oe:     out     std_logic;
+    flash_we:     out     std_logic;
+    flash_rp:     out     std_logic;
     flash_data:   inout   std_logic_vector (15 downto 0);
     flash_addr:   out     std_logic_vector (22 downto 0)
     );
@@ -82,6 +88,12 @@ architecture Behavioral of System is
       com_wrn:      out     std_logic;
       com_tbre:     in      std_logic;
       com_tsre:     in      std_logic;
+      flash_byte:   out     std_logic;
+      flash_vpen:   out     std_logic;
+      flash_ce:     out     std_logic;
+      flash_oe:     out     std_logic;
+      flash_we:     out     std_logic;
+      flash_rp:     out     std_logic;
       flash_data:   inout   std_logic_vector (15 downto 0);
       flash_addr:   out     std_logic_vector (22 downto 0);
       
