@@ -43,9 +43,8 @@ LIBRARY XilinxCoreLib;
 ENTITY Rom IS
   PORT (
     clka : IN STD_LOGIC;
-    ena : IN STD_LOGIC;
     addra : IN STD_LOGIC_VECTOR(9 DOWNTO 0);
-    douta : OUT STD_LOGIC_VECTOR(15 DOWNTO 0)
+    douta : OUT STD_LOGIC_VECTOR(31 DOWNTO 0)
   );
 END Rom;
 
@@ -54,9 +53,8 @@ ARCHITECTURE Rom_a OF Rom IS
 COMPONENT wrapped_Rom
   PORT (
     clka : IN STD_LOGIC;
-    ena : IN STD_LOGIC;
     addra : IN STD_LOGIC_VECTOR(9 DOWNTO 0);
-    douta : OUT STD_LOGIC_VECTOR(15 DOWNTO 0)
+    douta : OUT STD_LOGIC_VECTOR(31 DOWNTO 0)
   );
 END COMPONENT;
 
@@ -77,7 +75,7 @@ END COMPONENT;
       c_enable_32bit_address => 0,
       c_family => "spartan3",
       c_has_axi_id => 0,
-      c_has_ena => 1,
+      c_has_ena => 0,
       c_has_enb => 0,
       c_has_injecterr => 0,
       c_has_mem_output_regs_a => 0,
@@ -100,8 +98,8 @@ END COMPONENT;
       c_prim_type => 1,
       c_read_depth_a => 1024,
       c_read_depth_b => 1024,
-      c_read_width_a => 16,
-      c_read_width_b => 16,
+      c_read_width_a => 32,
+      c_read_width_b => 32,
       c_rst_priority_a => "CE",
       c_rst_priority_b => "CE",
       c_rst_type => "SYNC",
@@ -119,8 +117,8 @@ END COMPONENT;
       c_write_depth_b => 1024,
       c_write_mode_a => "WRITE_FIRST",
       c_write_mode_b => "WRITE_FIRST",
-      c_write_width_a => 16,
-      c_write_width_b => 16,
+      c_write_width_a => 32,
+      c_write_width_b => 32,
       c_xdevicefamily => "spartan3e"
     );
 -- synthesis translate_on
@@ -129,7 +127,6 @@ BEGIN
 U0 : wrapped_Rom
   PORT MAP (
     clka => clka,
-    ena => ena,
     addra => addra,
     douta => douta
   );

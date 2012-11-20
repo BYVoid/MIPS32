@@ -10,21 +10,21 @@ entity Memory is
     rst:          in      std_logic;
     rw:           in      RwType;
     length:       in      LenType;
-    addr:         in      std_logic_vector (31 downto 0);
-    data_in:      in      std_logic_vector (31 downto 0);
-    data_out:     out     std_logic_vector (31 downto 0);
+    addr:         in      Int32;
+    data_in:      in      Int32;
+    data_out:     out     Int32;
     
     -- Import --
     ram1_en:      out     std_logic;
     ram1_oe:      out     std_logic;
     ram1_rw:      out     std_logic;
-    ram1_data:    inout   std_logic_vector (15 downto 0);
-    ram1_addr:    out     std_logic_vector (17 downto 0);
+    ram1_data:    inout   Int16;
+    ram1_addr:    out     Int18;
     ram2_en:      out     std_logic;
     ram2_oe:      out     std_logic;
     ram2_rw:      out     std_logic;
-    ram2_data:    inout   std_logic_vector (15 downto 0);
-    ram2_addr:    out     std_logic_vector (17 downto 0);
+    ram2_data:    inout   Int16;
+    ram2_addr:    out     Int18;
     com_ready:    in      std_logic;
     com_rdn:      out     std_logic;
     com_wrn:      out     std_logic;
@@ -36,44 +36,70 @@ entity Memory is
     flash_oe:     out     std_logic;
     flash_we:     out     std_logic;
     flash_rp:     out     std_logic;
-    flash_data:   inout   std_logic_vector (15 downto 0);
-    flash_addr:   out     std_logic_vector (22 downto 0);
+    flash_data:   inout   Int16;
+    flash_addr:   out     Int23;
     
     -- Debug --
-    seg7_r_num:   out     std_logic_vector (3 downto 0)
+    seg7_r_num:   out     Int4
     );
 end Memory;
 
 architecture Behavioral of Memory is
+  component Rom
+    port (
+      clka: in std_logic;
+      addra: in Int10;
+      douta: out Int32
+    );
+  end component;
 
-type StateType is (
-  INITIAL,
-  RAM_READ_1,
-  RAM_WRITE_1,
-  RAM_WRITE_BYTE_1,
-  RAM_WRITE_BYTE_2,
-  COM_READ_1,
-  COM_READ_2,
-  COM_WRITE_1,
-  COM_WRITE_2,
-  FLASH_READ_1,
-  FLASH_WRITE_1
-);
+  type StateType is (
+    INITIAL,
+    ROM_READ,
+    RAM_READ_1,
+    RAM_WRITE_1,
+    RAM_WRITE_BYTE_1,
+    RAM_WRITE_BYTE_2,
+    COM_READ_1,
+    COM_READ_2,
+    COM_WRITE_1,
+    COM_WRITE_2,
+    FLASH_READ_1,
+    FLASH_WRITE_1
+  );
+
+procedure rom_read(
+  signal addr: in Int32;
+  signal data_out: out Int32;
+  signal rom_addr: out Int10;
+  signal rom_data: in Int32;
+  signal state: inout StateType) is
+begin
+  case state is
+    when INITIAL =>
+      rom_addr <= addr(11 downto 2);
+      state <= ROM_READ;
+    when ROM_READ =>
+      data_out <= rom_data;
+      state <= INITIAL;
+    when others =>
+  end case;
+end;
 
 procedure ram_read(
   signal length: in LenType;
-  signal addr: in std_logic_vector (31 downto 0);
-  signal data_out: out std_logic_vector (31 downto 0);
+  signal addr: in Int32;
+  signal data_out: out Int32;
   signal ram1_en: out std_logic;
   signal ram1_oe: out std_logic;
   signal ram1_rw: out std_logic;
-  signal ram1_data: inout std_logic_vector(15 downto 0);
-  signal ram1_addr: out std_logic_vector(17 downto 0);
+  signal ram1_data: inout Int16;
+  signal ram1_addr: out Int18;
   signal ram2_en: out std_logic;
   signal ram2_oe: out std_logic;
   signal ram2_rw: out std_logic;
-  signal ram2_data: inout std_logic_vector(15 downto 0);
-  signal ram2_addr: out std_logic_vector(17 downto 0);
+  signal ram2_data: inout Int16;
+  signal ram2_addr: out Int18;
   signal state: inout StateType) is
 begin
   case state is
@@ -123,18 +149,18 @@ end;
   
 procedure ram_write(
   signal length: in LenType;
-  signal addr: in std_logic_vector (31 downto 0);
-  signal data_in: in std_logic_vector (31 downto 0);
+  signal addr: in Int32;
+  signal data_in: in Int32;
   signal ram1_en: out std_logic;
   signal ram1_oe: out std_logic;
   signal ram1_rw: out std_logic;
-  signal ram1_data: inout std_logic_vector(15 downto 0);
-  signal ram1_addr: out std_logic_vector(17 downto 0);
+  signal ram1_data: inout Int16;
+  signal ram1_addr: out Int18;
   signal ram2_en: out std_logic;
   signal ram2_oe: out std_logic;
   signal ram2_rw: out std_logic;
-  signal ram2_data: inout std_logic_vector(15 downto 0);
-  signal ram2_addr: out std_logic_vector(17 downto 0);
+  signal ram2_data: inout Int16;
+  signal ram2_addr: out Int18;
   signal data_byte_temp: inout Int16;
   signal state: inout StateType) is
 begin
@@ -215,7 +241,7 @@ procedure com_status(
   signal com_ready: in std_logic;
   signal com_tbre: in std_logic;
   signal com_tsre: in std_logic;
-  signal data_out: out std_logic_vector (31 downto 0);
+  signal data_out: out Int32;
   signal state: inout StateType) is
 begin
   case state is
@@ -233,8 +259,8 @@ procedure com_read(
   signal com_rdn: out std_logic;
   signal ram1_en: out std_logic;
   signal ram2_en: out std_logic;
-  signal com_data: inout std_logic_vector (7 downto 0);
-  signal data_out: out std_logic_vector (31 downto 0);
+  signal com_data: inout Int8;
+  signal data_out: out Int32;
   signal state: inout StateType) is
 begin
   case state is
@@ -260,11 +286,11 @@ end;
 procedure com_write(
   signal com_tbre: in std_logic;
   signal com_tsre: in std_logic;
-  signal data_in: in std_logic_vector (31 downto 0);
+  signal data_in: in Int32;
   signal com_wrn: out std_logic;
   signal ram1_en: out std_logic;
   signal ram2_en: out std_logic;
-  signal com_data: inout std_logic_vector (7 downto 0);
+  signal com_data: inout Int8;
   signal state: inout StateType) is
 begin
   case state is
@@ -291,7 +317,7 @@ procedure flash_read(
   signal flash_oe: out std_logic;
   signal flash_we: out std_logic;
   signal flash_data: inout Int16;
-  signal flash_addr: out std_logic_vector(22 downto 0);
+  signal flash_addr: out Int23;
   signal state: inout StateType) is
 begin
   case state is
@@ -315,7 +341,7 @@ procedure flash_write(
   signal flash_oe: out std_logic;
   signal flash_we: out std_logic;
   signal flash_data: inout Int16;
-  signal flash_addr: out std_logic_vector(22 downto 0);
+  signal flash_addr: out Int23;
   signal state: inout StateType) is
 begin
   case state is
@@ -334,6 +360,8 @@ end;
   
 signal state: StateType;
 signal data_byte_temp: Int16;
+signal rom_addr: Int10;
+signal rom_data: Int32;
   
 begin
   flash_byte <= '1';
@@ -341,8 +369,13 @@ begin
   flash_ce <= '0';
   flash_rp <= '1';
   
+  rom_instance: Rom port map (
+    clka => clk,
+    addra => rom_addr,
+    douta => rom_data
+  );
+  
   process(clk, rst)
-    variable actual_addr: std_logic_vector (31 downto 0);
   begin
     if rst = '0' then
       -- Reset
@@ -367,6 +400,10 @@ begin
             ram_write(length, addr, data_in, ram1_en, ram1_oe, ram1_rw, ram1_data, ram1_addr,
               ram2_en, ram2_oe, ram2_rw, ram2_data, ram2_addr, data_byte_temp, state);
           end if;
+        elsif addr(31 downto 12) = x"1FC00" then
+          if rw = R then
+            rom_read(addr, data_out, rom_addr, rom_data, state);
+          end if;
         elsif addr = COM_Data_Addr then
           -- COM --
           if rw = R then
@@ -375,6 +412,7 @@ begin
             com_write(com_tbre, com_tsre, data_in, com_wrn, ram1_en, ram2_en, ram1_data(7 downto 0), state);
           end if;
         elsif addr = COM_Stat_Addr then
+          -- COM Status --
           if rw = R then
             com_status(com_ready, com_tbre, com_tsre, data_out, state);
           end if;
@@ -391,6 +429,7 @@ begin
           ram2_en, ram2_oe, ram2_rw, ram2_data, ram2_addr, state);
         ram_write(length, addr, data_in, ram1_en, ram1_oe, ram1_rw, ram1_data, ram1_addr,
           ram2_en, ram2_oe, ram2_rw, ram2_data, ram2_addr, data_byte_temp, state);
+        rom_read(addr, data_out, rom_addr, rom_data, state);
         com_read(com_ready, com_rdn, ram1_en, ram2_en, ram1_data(7 downto 0), data_out, state);
         com_write(com_tbre, com_tsre, data_in, com_wrn, ram1_en, ram2_en, ram1_data(7 downto 0), state);
         flash_read(addr, data_out, flash_oe, flash_we, flash_data, flash_addr, state);

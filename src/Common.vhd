@@ -17,7 +17,10 @@ package Common is
   subtype Int32 is std_logic_vector(31 downto 0);
   subtype Int31 is std_logic_vector(30 downto 0);
   subtype Int30 is std_logic_vector(29 downto 0);
+  subtype Int23 is std_logic_vector(22 downto 0);
+  subtype Int18 is std_logic_vector(17 downto 0);
   subtype Int16 is std_logic_vector(15 downto 0);
+  subtype Int10 is std_logic_vector(9  downto 0);
   subtype Int8  is std_logic_vector(7  downto 0);
   subtype Int6  is std_logic_vector(5  downto 0);
   subtype Int5  is std_logic_vector(4  downto 0);
