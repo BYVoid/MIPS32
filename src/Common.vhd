@@ -6,6 +6,7 @@ package Common is
   type RwType is (R, W);
   type LenType is (Lword, Lhalf, Lbyte);
   type AluOpType is (
+    ALU_NOP,
     ALU_AND, ALU_OR, ALU_XOR, ALU_NOR,
     ALU_ADD, ALU_SUB,
     ALU_SRL, ALU_SRA, ALU_SLL,

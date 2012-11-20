@@ -14,79 +14,45 @@ entity AluOpEncoder is
 end AluOpEncoder;
 
 architecture Behavioral of AluOpEncoder is
+  signal special, regimm : AluOpType;
 begin
-  process
-  begin
-    case op is
-      -- R-Type
-      when op_special =>
-        case func is
-          when func_sll =>
-            aluop <= ALU_SLL;
-          when func_srl =>
-            aluop <= ALU_SRL;
-          when func_sra =>
-            aluop <= ALU_SRA;
-          when func_sllv =>
-            aluop <= ALU_SLL;
-          when func_srlv =>
-            aluop <= ALU_SRL;
-          when func_srav =>
-            aluop <= ALU_SRA;
-          when func_addu =>
-            aluop <= ALU_ADD;
-          when func_subu =>
-            aluop <= ALU_SUB;
-          when func_and =>
-            aluop <= ALU_AND;
-          when func_or =>
-            aluop <= ALU_OR;
-          when func_xor =>
-            aluop <= ALU_XOR;
-          when func_nor =>
-            aluop <= ALU_NOR;
-          when func_slt =>
-            aluop <= ALU_LT;
-          when func_sltu =>
-            aluop <= ALU_LTU;
-          when others =>
-            -- alu not needed
-        end case;
-      when op_regimm =>
-        case rt is
-          when rt_bltz =>
-            aluop <= ALU_LT;
-          when rt_bgez =>
-            aluop <= ALU_GEZ;
-          when others =>
-            -- alu not needed
-        end case;
-      when op_beq =>
-        aluop <= ALU_EQ;
-      when op_bne =>
-        aluop <= ALU_NE;
-      when op_blez =>
-        aluop <= ALU_LEZ;
-      when op_bgtz =>
-        aluop <= ALU_GTZ;
-      when op_addiu =>
-        aluop <= ALU_ADD;
-      when op_slti =>
-        aluop <= ALU_LT;
-      when op_sltiu =>
-        aluop <= ALU_LTU;
-      when op_andi =>
-        aluop <= ALU_AND;
-      when op_ori =>
-        aluop <= ALU_OR;
-      when op_xori =>
-        aluop <= ALU_XOR;
-      when op_lui =>
-        aluop <= ALU_SLL;
-      when op_lb | op_lw | op_lbu | op_sb | op_sw =>
-        aluop <= ALU_ADD;
-      when others =>
-        --alu not needed
-    end case;
-  end process;
+  with func select special <=
+    ALU_SLL when func_sll,
+    ALU_SRL when func_srl,
+    ALU_SRA when func_sra,
+    ALU_SLL when func_sllv,
+    ALU_SRL when func_srlv,
+    ALU_SRA when func_srav,
+    ALU_ADD when func_addu,
+    ALU_SUB when func_subu,
+    ALU_AND when func_and,
+    ALU_OR  when func_or,
+    ALU_XOR when func_xor,
+    ALU_NOR when func_nor,
+    ALU_LT  when func_slt,
+    ALU_LTU when func_sltu,
+    ALU_NOP when others;
+  
+  with rt select regimm <=
+    ALU_LT  when rt_bltz,
+    ALU_GEZ when rt_bgez,
+    ALU_NOP when others;
+  
+  with op select aluop <=
+    special when op_special,
+    regimm  when op_regimm,
+    ALU_EQ  when op_beq,
+    ALU_NE  when op_bne,
+    ALU_LEZ when op_blez,
+    ALU_GTZ when op_bgtz,
+    ALU_ADD when op_addiu,
+    ALU_LT  when op_slti,
+    ALU_LTU when op_sltiu,
+    ALU_AND when op_andi,
+    ALU_OR  when op_ori,
+    ALU_XOR when op_xori,
+    ALU_SLL when op_lui,
+    ALU_ADD when op_lb | op_lw | op_lbu | op_sb | op_sw,
+    ALU_NOP when others;
+
 end Behavioral;

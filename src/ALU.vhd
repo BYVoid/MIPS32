@@ -15,7 +15,7 @@ end ALU;
 
 architecture Behavioral of ALU is
 begin
-  process(operand1, operand2)
+  process(aluop, operand1, operand2)
     variable op1_s, op2_s   : Signed32;
     variable op1_us, op2_us : Unsigned32;
     variable sham           : integer;
@@ -66,6 +66,10 @@ begin
         result <= Int31_Zero & boolean_to_std_logic(op1_s <= signed(Int32_Zero));
       when ALU_GEZ =>                   -- greater than or equal to zero
         result <= Int31_Zero & boolean_to_std_logic(op1_s >= signed(Int32_Zero));
+        
+      when ALU_NOP =>
+        -- do nothing
+        result <= Int32_Zero;
 
         -- not needed now      
         --when ALU_NOT =>
