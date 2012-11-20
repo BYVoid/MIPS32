@@ -15,6 +15,7 @@ package Common is
 
   subtype Int32 is std_logic_vector(31 downto 0);
   subtype Int31 is std_logic_vector(30 downto 0);
+  subtype Int30 is std_logic_vector(29 downto 0);
   subtype Int16 is std_logic_vector(15 downto 0);
   subtype Int8  is std_logic_vector(7  downto 0);
   subtype Int6  is std_logic_vector(5  downto 0);
@@ -28,10 +29,12 @@ package Common is
   constant Int8_Z:        Int8  := "ZZZZZZZZ";
   constant Int16_Zero:    Int16 := "0000000000000000";
   constant Int16_Z:       Int16 := "ZZZZZZZZZZZZZZZZ";
+  constant Int30_Zero:    Int30 := "000000000000000000000000000000";
   constant Int31_Zero:    Int31 := "0000000000000000000000000000000";
   constant Int32_Zero:    Int32 := "00000000000000000000000000000000";
   constant Int32_Z:       Int32 := "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ";
-  constant COM_Address:   Int32 := x"1FD003F8";
+  constant COM_Data_Addr: Int32 := x"1FD003F8";
+  constant COM_Stat_Addr: Int32 := x"1FD003FC";
 
   -- opcode
   constant op_special : Int6 := "000000";
