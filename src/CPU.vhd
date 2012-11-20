@@ -55,19 +55,19 @@ architecture Behavioral of CPU is
     );
 
   signal reg_rw      : RwType;
-  signal reg_rdReg1  : std_logic_vector (4 downto 0);
-  signal reg_rdReg2  : std_logic_vector (4 downto 0);
-  signal reg_wrReg   : std_logic_vector (4 downto 0);
-  signal reg_wrData  : std_logic_vector (31 downto 0);
+  signal reg_rdReg1  : std_logic_vector (4 downto 0) := "00000";
+  signal reg_rdReg2  : std_logic_vector (4 downto 0) := "00000";
+  signal reg_wrReg   : std_logic_vector (4 downto 0) := "00000";
+  signal reg_wrData  : std_logic_vector (31 downto 0) := Int32_Zero;
   signal reg_rdData1 : std_logic_vector (31 downto 0);
   signal reg_rdData2 : std_logic_vector (31 downto 0);
 
   signal aluop    : AluOpType;
-  signal alu_op   : std_logic_vector(5 downto 0);
-  signal alu_func : std_logic_vector(5 downto 0);
-  signal alu_rt   : std_logic_vector(4 downto 0);
-  signal alu_a    : std_logic_vector(31 downto 0);
-  signal alu_b    : std_logic_vector(31 downto 0);
+  signal alu_op   : std_logic_vector(5 downto 0) := "000000";
+  signal alu_func : std_logic_vector(5 downto 0) := "000000";
+  signal alu_rt   : std_logic_vector(4 downto 0) := "00000";
+  signal alu_a    : std_logic_vector(31 downto 0) := Int32_Zero;
+  signal alu_b    : std_logic_vector(31 downto 0) := Int32_Zero;
   signal alu_r    : std_logic_vector(31 downto 0);
 
   signal state : StateType;
@@ -137,6 +137,11 @@ begin
         when ID_0 =>
           -- instruction fetched
           instr       := ram_data_out;
+          write(L, string'("instr: "));
+          write(L, to_bitvector(instr));
+          writeline(output, L);
+
+          
           -- decode
           op          := instr(31 downto 26);
           instr_index := instr(25 downto 0);
@@ -163,7 +168,10 @@ begin
               state <= WB_0;
             end if;
           else
-            write(L, string'("read rs, rt"));
+            write(L, string'("read rs, rt: "));
+            write(L, to_bitvector(rs));
+            write(L, string'(", "));
+            write(L, to_bitvector(rt));
             writeline(output, L);
             reg_rw     <= R;
             reg_rdReg1 <= rs;
@@ -173,10 +181,10 @@ begin
           
         when EX_0 =>
           -- registers read out
-          write(L, string'("rs: "));
+          write(L, string'("R[rs]: "));
           write(L, to_bitvector(reg_rdData1));
           writeline(output, L);
-          write(L, string'("rt: "));
+          write(L, string'("R[rt]: "));
           write(L, to_bitvector(reg_rdData2));
           writeline(output, L);
 
