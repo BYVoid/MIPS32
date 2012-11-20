@@ -48,24 +48,27 @@ architecture Behavioral of CPU is
   
   type StateType is (
     IF_0,                               -- Instruction Fetch
+    IF_1,
     ID_0,                               -- Instruction Decode
+    ID_1,
     EX_0,                               -- Execute
     MEM_0,                              -- Memory Access
+    MEM_1,
     WB_0                                -- Write Back
     );
 
   signal reg_rw      : RwType;
-  signal reg_rdReg1  : std_logic_vector (4 downto 0) := "00000";
-  signal reg_rdReg2  : std_logic_vector (4 downto 0) := "00000";
-  signal reg_wrReg   : std_logic_vector (4 downto 0) := "00000";
+  signal reg_rdReg1  : std_logic_vector (4 downto 0)  := "00000";
+  signal reg_rdReg2  : std_logic_vector (4 downto 0)  := "00000";
+  signal reg_wrReg   : std_logic_vector (4 downto 0)  := "00000";
   signal reg_wrData  : std_logic_vector (31 downto 0) := Int32_Zero;
   signal reg_rdData1 : std_logic_vector (31 downto 0);
   signal reg_rdData2 : std_logic_vector (31 downto 0);
 
   signal aluop    : AluOpType;
-  signal alu_op   : std_logic_vector(5 downto 0) := "000000";
-  signal alu_func : std_logic_vector(5 downto 0) := "000000";
-  signal alu_rt   : std_logic_vector(4 downto 0) := "00000";
+  signal alu_op   : std_logic_vector(5 downto 0)  := "000000";
+  signal alu_func : std_logic_vector(5 downto 0)  := "000000";
+  signal alu_rt   : std_logic_vector(4 downto 0)  := "00000";
   signal alu_a    : std_logic_vector(31 downto 0) := Int32_Zero;
   signal alu_b    : std_logic_vector(31 downto 0) := Int32_Zero;
   signal alu_r    : std_logic_vector(31 downto 0);
@@ -105,6 +108,8 @@ begin
     variable rs, rt, rd, sa : std_logic_vector (4 downto 0);
     variable imm            : std_logic_vector (15 downto 0);
     variable instr_index    : std_logic_vector (25 downto 0);
+    variable tmp_reg        : std_logic_vector (4 downto 0);
+    variable tmp_data       : std_logic_vector (31 downto 0);
   begin
     if rst = '0' then
       --reset
@@ -132,16 +137,18 @@ begin
           writeline(output, L);
 
           -- change state
+          state <= IF_1;
+        
+        when IF_1 =>
           state <= ID_0;
-          
         when ID_0 =>
           -- instruction fetched
-          instr       := ram_data_out;
+          instr := ram_data_out;
           write(L, string'("instr: "));
           write(L, to_bitvector(instr));
           writeline(output, L);
 
-          
+
           -- decode
           op          := instr(31 downto 26);
           instr_index := instr(25 downto 0);
@@ -176,8 +183,11 @@ begin
             reg_rw     <= R;
             reg_rdReg1 <= rs;
             reg_rdReg2 <= rt;
-            state      <= EX_0;
+            state      <= ID_1;
           end if;
+        when ID_1 =>
+          
+          state <= EX_0;
           
         when EX_0 =>
           -- registers read out
@@ -237,72 +247,103 @@ begin
               state <= WB_0;
           end case;
 
-          write(L, string'("alu_a: "));
-          write(L, to_bitvector(alu_a));
-          writeline(output, L);
-          write(L, string'("alu_b: "));
-          write(L, to_bitvector(alu_b));
-          writeline(output, L);
 
         when MEM_0 =>
           -- alu result
           ram_addr <= alu_r;
-
-          write(L, string'("ram_addr: "));
-          write(L, to_bitvector(alu_r));
+          write(L, string'("MEM"));
           writeline(output, L);
 
           case op is
             when op_lw =>
               ram_rw     <= R;
               ram_length <= Lword;
-              state      <= WB_0;
+              -- state      <= WB_0;
             when op_lbu | op_lb =>
               ram_rw     <= R;
               ram_length <= Lbyte;
-              state      <= WB_0;
+              -- state      <= WB_0;
             when op_sw =>
+              write(L, string'("write "));
+              write(L, to_bitvector(reg_rdData2));
+              write(L, string'(" to "));
+              write(L, to_bitvector(alu_r));
+              writeline(output, L);
+
               ram_rw      <= W;
               ram_length  <= Lword;
               ram_data_in <= reg_rdData2;
-              state       <= IF_0;
+              -- state       <= IF_0;
             when op_sb =>
+              write(L, string'("write "));
+              write(L, to_bitvector(reg_rdData2(7 downto 0)));
+              write(L, string'(" to "));
+              write(L, to_bitvector(alu_r));
+              writeline(output, L);
+
               ram_rw      <= W;
               ram_length  <= Lbyte;
               ram_data_in <= reg_rdData2;
-              state       <= IF_0;
+              -- state       <= IF_0;
             when others =>
           end case;
 
-
-
+          state <= MEM_1;
+        when MEM_1 => 
+          if op = op_sw or op = op_sb then
+            state <= IF_0;
+          elsif op = op_lw or op = op_lb or op = op_lbu then
+            state <=   WB_0;
+          end if;
         when WB_0 =>
+
+          write(L, string'("alu_a: "));
+          write(L, to_bitvector(alu_a));
+          writeline(output, L);
+          write(L, string'("alu_b: "));
+          write(L, to_bitvector(alu_b));
+          writeline(output, L);
+          write(L, string'("alu_r: "));
+          write(L, to_bitvector(alu_r));
+          writeline(output, L);
 
           case op is
             when op_lw | op_lbu =>
-              reg_wrReg  <= rt;
-              reg_wrData <= ram_data_out;
-              reg_rw     <= W;
+              tmp_reg  := rt;
+              tmp_data := ram_data_out;
+              reg_rw   <= W;
+              
+              write(L, string'("read "));
+              write(L, to_bitvector(ram_data_out));
+              write(L, string'(" from "));
+              write(L, to_bitvector(alu_r));
+              writeline(output, L);
             when op_lb =>
-              reg_wrReg  <= rt;
-              reg_wrData <= std_logic_vector(resize(signed(ram_data_out(15 downto 0)), 32));
-              reg_rw     <= W;
+              tmp_reg  := rt;
+              tmp_data := std_logic_vector(resize(signed(ram_data_out(15 downto 0)), 32));
+              reg_rw   <= W;
+
+              write(L, string'("read "));
+              write(L, to_bitvector(ram_data_out));
+              write(L, string'(" from "));
+              write(L, to_bitvector(alu_r));
+              writeline(output, L);
             when op_special =>
               if func = func_jalr then
-                reg_wrData <= std_logic_vector(unsigned(pc) + to_unsigned(8, 32));
+                tmp_data := std_logic_vector(unsigned(pc) + to_unsigned(8, 32));
               else
-                reg_wrData <= alu_r;
+                tmp_data := alu_r;
               end if;
-              reg_wrReg <= rd;
-              reg_rw    <= W;
+              tmp_reg := rd;
+              reg_rw  <= W;
             when op_jal =>
-              reg_wrReg  <= "11111";
-              reg_wrData <= std_logic_vector(unsigned(pc) + to_unsigned(8, 32));
-              reg_rw     <= W;
+              tmp_reg  := "11111";
+              tmp_data := std_logic_vector(unsigned(pc) + to_unsigned(8, 32));
+              reg_rw   <= W;
             when op_addiu | op_sltiu | op_slti | op_andi | op_ori | op_xori =>
-              reg_wrReg  <= rt;
-              reg_wrData <= alu_r;
-              reg_rw     <= W;
+              tmp_reg  := rt;
+              tmp_data := alu_r;
+              reg_rw   <= W;
             when op_beq | op_bne | op_bgtz | op_blez | op_regimm =>
               if alu_r(0) = '1' then
                 npc := std_logic_vector(unsigned(pc) + to_unsigned(4, 32) + unsigned(resize(signed(imm & "00"), 32)));
@@ -310,10 +351,13 @@ begin
             when others =>
           end case;
 
+          reg_wrReg  <= tmp_reg;
+          reg_wrData <= tmp_data;
+
           write(L, string'("write "));
-          write(L, to_bitvector(reg_wrData));
+          write(L, to_bitvector(tmp_data));
           write(L, string'(" to Reg "));
-          write(L, to_bitvector(reg_wrReg));
+          write(L, to_bitvector(tmp_reg));
           writeline(output, L);
 
           state <= IF_0;
