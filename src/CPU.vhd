@@ -2,6 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use std.textio.all;
+use std.env.all;
 use work.Common.all;
 
 entity CPU is
@@ -163,7 +164,7 @@ begin
           if op = op_special and func = func_syscall then
             write(L, string'("halt"));
             writeline(output, L);
-            report "end of test" severity failure;
+            finish(0);
           elsif op = op_lui then
             write(L, string'("lui"));
             writeline(output, L);
