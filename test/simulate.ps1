@@ -19,8 +19,10 @@ cd ../src
 if (test-path transcript) {rm -force transcript}
 if (test-path *wlf*) {rm -force *wlf*}
 if (test-path work) {rm -force -recurse work}
-# 
+
+# create the work library 
 vlib work
+
 # compile VHDL quietly
 vcom -quiet Common.vhd MemoryVirtual.vhd AluOpEncoder.vhd ALU.vhd RegisterFile.vhd CPU.vhd System_sim.vhd
 
