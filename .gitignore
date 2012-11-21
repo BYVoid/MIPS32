@@ -8,5 +8,10 @@ CPU.xreport
 *.cf
 transcript
 *wlf*
-memory.dat
-
+src/memory.dat
+src/*.in
+src/*.result
+test/*.dat
+test/*.out
+test/*.code.txt
+test/*.result.txt
