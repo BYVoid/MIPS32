@@ -345,7 +345,7 @@ begin
               tmp_reg  := "11111";
               tmp_data := std_logic_vector(unsigned(pc) + to_unsigned(8, 32));
               reg_rw   <= W;
-            when op_addiu | op_sltiu | op_slti | op_andi | op_ori | op_xori =>
+            when op_addiu | op_sltiu | op_slti | op_andi | op_ori | op_xori | op_lui =>
               tmp_reg  := rt;
               tmp_data := alu_r;
               reg_rw   <= W;
