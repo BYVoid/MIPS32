@@ -13,6 +13,8 @@ package Common is
     ALU_EQ, ALU_NE,
     ALU_LT, ALU_LTU,
     ALU_GTZ, ALU_LEZ, ALU_GEZ);
+    
+  subtype WaitCycles is integer range 0 to 15;
 
   subtype Int32 is std_logic_vector(31 downto 0);
   subtype Int31 is std_logic_vector(30 downto 0);

@@ -6,6 +6,12 @@ use std.env.all;
 use work.Common.all;
 
 entity CPU is
+  generic (
+    debug      : boolean;
+    fetch_wait : WaitCycles;
+    load_wait  : WaitCycles;
+    store_wait : WaitCycles
+    );
   port (
     clk : in std_logic;
     rst : in std_logic;

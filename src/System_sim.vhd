@@ -7,6 +7,11 @@ end System_sim;
 
 architecture Behavioral of System_sim is
   component CPU
+    generic (
+      debug      : boolean;
+      fetch_wait : WaitCycles;
+      load_wait  : WaitCycles;
+      store_wait : WaitCycles);
     port (
       clk   : in std_logic;
       rst   : in std_logic;
@@ -44,6 +49,11 @@ architecture Behavioral of System_sim is
 begin
 
   CPU_1 : CPU
+    generic map (
+      debug      => true,
+      fetch_wait => 0,
+      load_wait  => 0,
+      store_wait => 0)
     port map (
       clk          => clk,
       rst          => rst,
