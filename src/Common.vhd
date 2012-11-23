@@ -20,6 +20,7 @@ package Common is
   subtype Int31 is std_logic_vector(30 downto 0);
   subtype Int30 is std_logic_vector(29 downto 0);
   subtype Int26 is std_logic_vector(25 downto 0);
+  subtype Int24 is std_logic_vector(23 downto 0);
   subtype Int23 is std_logic_vector(22 downto 0);
   subtype Int18 is std_logic_vector(17 downto 0);
   subtype Int16 is std_logic_vector(15 downto 0);
@@ -32,17 +33,18 @@ package Common is
   subtype Signed32 is signed(31 downto 0);
   subtype Unsigned32 is unsigned(31 downto 0);
 
-  constant Int8_Zero     : Int8  := "00000000";
-  constant Int8_Z        : Int8  := "ZZZZZZZZ";
-  constant Int16_Zero    : Int16 := "0000000000000000";
-  constant Int16_Z       : Int16 := "ZZZZZZZZZZZZZZZZ";
-  constant Int30_Zero    : Int30 := "000000000000000000000000000000";
-  constant Int31_Zero    : Int31 := "0000000000000000000000000000000";
-  constant Int32_Zero    : Int32 := "00000000000000000000000000000000";
-  constant Int32_Z       : Int32 := "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ";
-  constant COM_Data_Addr : Int32 := x"1FD003F8";
-  constant COM_Stat_Addr : Int32 := x"1FD003FC";
-
+  constant Int8_Zero:     Int8  := "00000000";
+  constant Int8_Z:        Int8  := "ZZZZZZZZ";
+  constant Int16_Zero:    Int16 := "0000000000000000";
+  constant Int16_Z:       Int16 := "ZZZZZZZZZZZZZZZZ";
+  constant Int24_Zero:    Int24 := "000000000000000000000000";
+  constant Int30_Zero:    Int30 := "000000000000000000000000000000";
+  constant Int31_Zero:    Int31 := "0000000000000000000000000000000";
+  constant Int32_Zero:    Int32 := "00000000000000000000000000000000";
+  constant Int32_Z:       Int32 := "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ";
+  constant COM_Data_Addr: Int32 := x"1FD003F8";
+  constant COM_Stat_Addr: Int32 := x"1FD003FC";
+  
   -- opcode
   constant op_special : Int6 := "000000";
   constant op_regimm  : Int6 := "000001";

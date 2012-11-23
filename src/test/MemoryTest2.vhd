@@ -109,6 +109,90 @@ architecture Behavioral of System is
       led_out:    out   std_logic_vector (6 downto 0)
     );
   end component;
-
+  
+  signal clk: std_logic;
+  signal rw: RwType;
+  signal length: LenType;
+  signal addr, data_in, data_out: Int32;
+  signal seg7_l_num, seg7_r_num: Int4;
+  signal mem_en: std_logic;
+  signal temp: Int8;
+  
+  signal state: integer;
 begin
+  clk <= clk_key;
+  
+  seg7_left: Seg7 port map (
+    seg7_l_num,
+    seg7_l
+  );
+  seg7_right: Seg7 port map (
+    seg7_r_num,
+    seg7_r
+  );
+  memory_controller: Memory port map (
+    clk, rst, mem_en,
+    rw, length,
+    addr, data_in, data_out,
+    ram1_en, ram1_oe, ram1_rw, ram1_data, ram1_addr,
+    ram2_en, ram2_oe, ram2_rw, ram2_data, ram2_addr,
+    com_ready, com_rdn, com_wrn, com_tbre, com_tsre,
+    flash_byte, flash_vpen, flash_ce, flash_oe, flash_we, flash_rp, flash_data, flash_addr,
+    seg7_r_num
+  );
+  
+  process (clk, rst)
+  begin
+    if rst = '0' then
+      rw <= R;
+      length <= Lword;
+      state <= 0;
+      mem_en <= '1';
+      led <= Int16_Zero;
+    elsif rising_edge(clk) then
+      case state is
+        when 0 =>
+          mem_en <= '0';
+          rw <= R;
+          length <= Lword;
+          addr <= COM_Data_Addr;
+          state <= state + 1;
+        when 1 =>
+          -- Initial
+          state <= state + 1;
+        when 2 =>
+          -- COM_READ_1
+          state <= state + 1;
+        when 3 =>
+          -- COM_READ_2
+          mem_en <= '1';
+          state <= state + 1;
+        when 4 =>
+          -- Initial
+          temp <= data_out(7 downto 0);
+          led <= Int8_Zero & data_out(7 downto 0);
+          state <= state + 1;
+        when 5 =>
+          mem_en <= '0';
+          rw <= W;
+          length <= Lword;
+          addr <= COM_Data_Addr;
+          data_in <= Int24_Zero & temp;
+          state <= state + 1;
+        when 6 =>
+          -- Initial
+          state <= state + 1;
+        when 7 =>
+          -- COM_WRITE_1
+          state <= state + 1;
+        when 8 =>
+          -- COM_WRITE_2
+          mem_en <= '1';
+          state <= state + 1;
+        when others =>
+          state <= 0;
+      end case;
+      seg7_l_num <= std_logic_vector(to_signed(state, 4));
+    end if;
+  end process;
 end Behavioral;

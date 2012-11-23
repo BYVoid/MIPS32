@@ -109,6 +109,100 @@ architecture Behavioral of System is
       led_out:    out   std_logic_vector (6 downto 0)
     );
   end component;
-
+  
+  component ClockDemul is
+    port (
+      clk_in:       in      std_logic;
+      rst:          in      std_logic;
+      divisor:      in      integer;
+      clk_out:      out     std_logic
+    );
+  end component;
+  
+  signal clk: std_logic;
+  signal rw: RwType;
+  signal length: LenType;
+  signal addr, romaddr, data_in, data_out: Int32;
+  signal seg7_l_num, seg7_r_num: Int4;
+  signal mem_en: std_logic;
+  signal temp: Int32;
+  
+  signal state: integer;
 begin
+  --clk <= clk_key;
+  demultiplied_clk: ClockDemul port map (clk1, rst, 500000, clk);
+  
+  seg7_left: Seg7 port map (
+    seg7_l_num,
+    seg7_l
+  );
+  seg7_right: Seg7 port map (
+    seg7_r_num,
+    seg7_r
+  );
+  memory_controller: Memory port map (
+    clk, rst, mem_en,
+    rw, length,
+    addr, data_in, data_out,
+    ram1_en, ram1_oe, ram1_rw, ram1_data, ram1_addr,
+    ram2_en, ram2_oe, ram2_rw, ram2_data, ram2_addr,
+    com_ready, com_rdn, com_wrn, com_tbre, com_tsre,
+    flash_byte, flash_vpen, flash_ce, flash_oe, flash_we, flash_rp, flash_data, flash_addr,
+    seg7_r_num
+  );
+  
+  process (clk, rst)
+  begin
+    if rst = '0' then
+      rw <= R;
+      length <= Lword;
+      state <= 0;
+      mem_en <= '1';
+      led <= Int16_Zero;
+      romaddr <= x"1FC00000";
+      
+    elsif rising_edge(clk) then
+      case state is
+        when 0 =>
+          mem_en <= '0';
+          rw <= R;
+          length <= Lword;
+          addr <= romaddr;
+          led <= romaddr(31 downto 16);
+          state <= state + 1;
+        when 1 =>
+          -- Initial
+          state <= state + 1;
+        when 2 =>
+          -- ROM_READ 1
+          state <= state + 1;
+          mem_en <= '1';
+        when 3 =>
+          -- Initial
+          temp <= data_out;
+          state <= state + 1;
+        when 4 =>
+          mem_en <= '0';
+          rw <= W;
+          length <= Lbyte;
+          addr <= COM_Data_Addr;
+          data_in <= temp;
+          state <= state + 1;
+        when 5 =>
+          -- Initial
+          state <= state + 1;
+        when 6 =>
+          -- COM_WRITE_1 8
+          state <= state + 1;
+        when 7 =>
+          -- COM_WRITE_2 9
+          mem_en <= '1';
+          romaddr <= std_logic_vector(unsigned(romaddr) + 4);
+          state <= state + 1;
+        when others =>
+          state <= 0;
+      end case;
+      seg7_l_num <= std_logic_vector(to_signed(state, 4));
+    end if;
+  end process;
 end Behavioral;
