@@ -14,6 +14,7 @@ src/*.result
 test/*.dat
 test/*.out
 test/*.o
+test/*.coe
 test/*.bin
 test/*.exe
 test/*.code.txt
