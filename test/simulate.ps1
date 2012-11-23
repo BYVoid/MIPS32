@@ -44,6 +44,6 @@ if (test-path memory.dat) {rm -force memory.dat}
 cd ../test
 
 # parse the result file, then delete it
-$line = (cat ../src/"$fileout.result").count
-cat ../src/"$fileout.result" -tail ($line-6) | %{$_ -replace ('^# ', '')} |out-file -encoding ascii "$fileout.result.txt"
+# $line = (cat ../src/"$fileout.result").count
+cat ../src/"$fileout.result" | %{$_ -replace ('^# ', '')} |out-file -encoding ascii "$fileout.result.txt"
 rm ../src/"$fileout.result"
