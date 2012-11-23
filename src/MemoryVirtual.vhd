@@ -9,6 +9,7 @@ entity MemoryVirtual is
     -- Interface --
     clk      : in  std_logic;
     rst      : in  std_logic;
+    en       : in  std_logic;
     rw       : in  RwType;
     length   : in  LenType;
     addr     : in  std_logic_vector (31 downto 0);
@@ -77,44 +78,46 @@ begin
     if rst = '0' then
       -- Reset
       load;
-    elsif rising_edge(clk) then
-      addr_int := to_integer(unsigned(addr));
-      if rw = R then
-        -- Read ram
-        case length is
-          when Lword =>
-            data_out(7 downto 0)   <= mem(addr_int);
-            data_out(15 downto 8)  <= mem(addr_int+1);
-            data_out(23 downto 16) <= mem(addr_int+2);
-            data_out(31 downto 24) <= mem(addr_int+3);
-          when Lhalf =>
-            data_out(7 downto 0)   <= mem(addr_int);
-            data_out(15 downto 8)  <= mem(addr_int+1);
-            data_out(23 downto 16) <= Int8_Zero;
-            data_out(31 downto 24) <= Int8_Zero;
-          when Lbyte =>
-            data_out(7 downto 0)   <= mem(addr_int);
-            data_out(15 downto 8)  <= Int8_Zero;
-            data_out(23 downto 16) <= Int8_Zero;
-            data_out(31 downto 24) <= Int8_Zero;
-          when others =>
-            data_out <= Int32_Zero;
-        end case;
-      else
-        -- Write ram
-        case length is
-          when Lword =>
-            mem(addr_int)   := data_in(7 downto 0);
-            mem(addr_int+1) := data_in(15 downto 8);
-            mem(addr_int+2) := data_in(23 downto 16);
-            mem(addr_int+3) := data_in(31 downto 24);
-          when Lhalf =>
-            mem(addr_int)   := data_in(7 downto 0);
-            mem(addr_int+1) := data_in(15 downto 8);
-          when Lbyte =>
-            mem(addr_int) := data_in(7 downto 0);
-          when others =>
-        end case;
+    elsif falling_edge(clk) then
+      if en = '0' then
+        addr_int := to_integer(unsigned(addr));
+        if rw = R then
+          -- Read ram
+          case length is
+            when Lword =>
+              data_out(7 downto 0)   <= mem(addr_int);
+              data_out(15 downto 8)  <= mem(addr_int+1);
+              data_out(23 downto 16) <= mem(addr_int+2);
+              data_out(31 downto 24) <= mem(addr_int+3);
+            when Lhalf =>
+              data_out(7 downto 0)   <= mem(addr_int);
+              data_out(15 downto 8)  <= mem(addr_int+1);
+              data_out(23 downto 16) <= Int8_Zero;
+              data_out(31 downto 24) <= Int8_Zero;
+            when Lbyte =>
+              data_out(7 downto 0)   <= mem(addr_int);
+              data_out(15 downto 8)  <= Int8_Zero;
+              data_out(23 downto 16) <= Int8_Zero;
+              data_out(31 downto 24) <= Int8_Zero;
+            when others =>
+              data_out <= Int32_Zero;
+          end case;
+        else
+          -- Write ram
+          case length is
+            when Lword =>
+              mem(addr_int)   := data_in(7 downto 0);
+              mem(addr_int+1) := data_in(15 downto 8);
+              mem(addr_int+2) := data_in(23 downto 16);
+              mem(addr_int+3) := data_in(31 downto 24);
+            when Lhalf =>
+              mem(addr_int)   := data_in(7 downto 0);
+              mem(addr_int+1) := data_in(15 downto 8);
+            when Lbyte =>
+              mem(addr_int) := data_in(7 downto 0);
+            when others =>
+          end case;
+        end if;
       end if;
     end if;
   end process;

@@ -17,6 +17,7 @@ architecture Behavioral of System_sim is
       rst   : in std_logic;
 
       -- RAM
+      ram_en       : out std_logic;
       ram_rw       : out RwType;
       ram_length   : out LenType;
       ram_addr     : out std_logic_vector (31 downto 0);
@@ -27,6 +28,7 @@ architecture Behavioral of System_sim is
     port (
       clk      : in  std_logic;
       rst      : in  std_logic;
+      en       : in  std_logic;
       rw       : in  RwType;
       length   : in  LenType;
       addr     : in  std_logic_vector (31 downto 0);
@@ -38,6 +40,7 @@ architecture Behavioral of System_sim is
   signal rst : std_logic;
 
   --RAM
+  signal ram_en       : std_logic;
   signal ram_rw       : RwType;
   signal ram_length   : LenType;
   signal ram_addr     : std_logic_vector (31 downto 0);
@@ -57,6 +60,7 @@ begin
     port map (
       clk          => clk,
       rst          => rst,
+      ram_en       => ram_en,
       ram_rw       => ram_rw,
       ram_length   => ram_length,
       ram_addr     => ram_addr,
@@ -67,6 +71,7 @@ begin
     port map (
       clk      => clk,
       rst      => rst,
+      en       => ram_en,
       rw       => ram_rw,
       length   => ram_length,
       addr     => ram_addr,

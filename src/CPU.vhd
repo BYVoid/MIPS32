@@ -17,6 +17,7 @@ entity CPU is
     rst : in std_logic;
 
     -- RAM
+    ram_en       : out std_logic := '1';
     ram_rw       : out RwType;
     ram_length   : out LenType;
     ram_addr     : out std_logic_vector (31 downto 0) := Int32_Zero;
@@ -113,6 +114,10 @@ begin
     variable pc, npc        : Int32;
     variable instr          : Int32;
     
+    variable fetch_count    : WaitCycles := 0;
+    variable load_count     : WaitCycles := 0;
+    variable store_count    : WaitCycles := 0;
+    
     variable tmp_reg        : std_logic_vector (4 downto 0);
     variable tmp_data       : std_logic_vector (31 downto 0);
     
@@ -135,36 +140,48 @@ begin
     elsif rising_edge(clk) then
       case state is
         when IF_0 =>
+        
           -- finish writing to register
           reg_rw <= R;
 
           -- renew pc
           pc         := npc;
           npc        := std_logic_vector(unsigned(pc) + to_unsigned(4, 32));
+          
           -- prepare to fetch an instruction
+          ram_en     <= '0';
           ram_rw     <= R;
           ram_length <= Lword;
           ram_addr   <= pc;
 
-          write(L, string'("fetch instr @ "));
-          write(L, to_bitvector(pc));
-          writeline(output, L);
+          if debug then
+            write(L, string'("fetch instr @ "));
+            write(L, to_bitvector(pc));
+            writeline(output, L);
+          end if;
 
           -- change state
           state <= IF_1;
         
         when IF_1 =>
-          state <= ID_0;
+          if fetch_count = fetch_wait then
+            fetch_count := 0;
+            state <= ID_0;
+          else
+            fetch_count := fetch_count + 1;
+          end if;
+        
         when ID_0 =>
+        
           -- instruction fetched
+          ram_en <= '1';
           instr := ram_data_out;
-          write(L, string'("instr: "));
-          write(L, to_bitvector(instr));
-          writeline(output, L);
-
-
-          -- decode
           
+          if debug then
+            write(L, string'("instr: "));
+            write(L, to_bitvector(instr));
+            writeline(output, L);
+          end if;
 
           -- prepare to read registers, then change state
           if op = op_special and func = func_syscall then
@@ -262,6 +279,7 @@ begin
         when MEM_0 =>
           -- alu result
           ram_addr <= alu_r;
+          ram_en <= '0';
           write(L, string'("MEM"));
           writeline(output, L);
 
@@ -304,10 +322,11 @@ begin
           if op = op_sw or op = op_sb then
             state <= IF_0;
           elsif op = op_lw or op = op_lb or op = op_lbu then
-            state <=   WB_0;
+            state <= WB_0;
           end if;
         when WB_0 =>
-
+          ram_en <= '1';
+        
           write(L, string'("alu_a: "));
           write(L, to_bitvector(alu_a));
           writeline(output, L);
