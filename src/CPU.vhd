@@ -51,7 +51,7 @@ architecture Behavioral of CPU is
     IF_0,                               -- Instruction Fetch
     IF_1,
     ID_0,                               -- Instruction Decode
-    ID_1,
+    --ID_1,
     EX_0,                               -- Execute
     MEM_0,                              -- Memory Access
     MEM_1,
@@ -102,15 +102,22 @@ begin
       result   => alu_r);
 
   process (clk, rst)
+  
     variable L              : line;
     variable pc, npc        : Int32;
     variable instr          : Int32;
-    variable op, func       : std_logic_vector (5 downto 0);
-    variable rs, rt, rd, sa : std_logic_vector (4 downto 0);
-    variable imm            : std_logic_vector (15 downto 0);
-    variable instr_index    : std_logic_vector (25 downto 0);
+    
     variable tmp_reg        : std_logic_vector (4 downto 0);
     variable tmp_data       : std_logic_vector (31 downto 0);
+    
+    alias op : Int6 is instr(31 downto 26);
+    alias rs : Int5 is instr(25 downto 21);
+    alias rt : Int5 is instr(20 downto 16);
+    alias rd : Int5 is instr(15 downto 11);
+    alias sa : Int5 is instr(10 downto 6);
+    alias func : Int6 is instr(5 downto 0);
+    alias instr_index : Int26 is instr(25 downto 0);
+    alias imm : Int16 is instr(15 downto 0);
   begin
     if rst = '0' then
       --reset
@@ -151,14 +158,7 @@ begin
 
 
           -- decode
-          op          := instr(31 downto 26);
-          instr_index := instr(25 downto 0);
-          rs          := instr(25 downto 21);
-          rt          := instr(20 downto 16);
-          imm         := instr(15 downto 0);
-          rd          := instr(15 downto 11);
-          sa          := instr(10 downto 6);
-          func        := instr(5 downto 0);
+          
 
           -- prepare to read registers, then change state
           if op = op_special and func = func_syscall then
@@ -188,11 +188,11 @@ begin
             reg_rw     <= R;
             reg_rdReg1 <= rs;
             reg_rdReg2 <= rt;
-            state      <= ID_1;
+            state      <= EX_0;--ID_1;
           end if;
-        when ID_1 =>
+        --when ID_1 =>
           
-          state <= EX_0;
+          --state <= EX_0;
           
         when EX_0 =>
           -- registers read out

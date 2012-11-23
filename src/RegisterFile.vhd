@@ -19,17 +19,17 @@ entity RegisterFile is
 end RegisterFile; 
 
 architecture Behavioral of RegisterFile is
-  constant NUM_REGISTERS: integer := 32;
-  type RegistersType is array(0 to NUM_REGISTERS - 1) of Int32;
-  signal registers: RegistersType;
 begin
   process (clk, rst)
+    constant NUM_REGISTERS: integer := 32;
+    type RegistersType is array(0 to NUM_REGISTERS - 1) of Int32;
+    variable registers: RegistersType;
   begin
     if rst = '0' then
       for i in 0 to NUM_REGISTERS - 1 loop
-        registers(i) <= Int32_Zero;
+        registers(i) := Int32_Zero;
       end loop;
-    elsif rising_edge(clk) then
+    elsif falling_edge(clk) then
       if rw = R then
         -- Read register --
         rdData1 <= registers(to_integer(unsigned(rdReg1)));
@@ -37,7 +37,7 @@ begin
       else
         -- Write register --
         if wrReg /= "00000" then
-          registers(to_integer(unsigned(wrReg))) <= wrData;
+          registers(to_integer(unsigned(wrReg))) := wrData;
         end if;
       end if;
     end if;
