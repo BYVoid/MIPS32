@@ -1,5 +1,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 use work.Common.all;
 
 entity System is
@@ -66,6 +67,7 @@ architecture Behavioral of System is
       -- Interface --
       clk:          in      std_logic;
       rst:          in      std_logic;
+      en:           in      std_logic;
       rw:           in      RwType;
       length:       in      LenType;
       addr:         in      std_logic_vector (31 downto 0);
@@ -99,15 +101,14 @@ architecture Behavioral of System is
       
       -- Debug --
       seg7_r_num:   out     std_logic_vector (3 downto 0)
-      );
+    );
   end component;
   component Seg7 is
     port (
       digit:      in    std_logic_vector (3 downto 0);
       led_out:    out   std_logic_vector (6 downto 0)
-      );
+    );
   end component;
+
 begin
-  
-  
 end Behavioral;
