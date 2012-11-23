@@ -26,8 +26,8 @@
 --    All rights reserved.                                                    --
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
--- You must compile the wrapper file Rom.vhd when simulating
--- the core, Rom. When compiling the wrapper file, be sure to
+-- You must compile the wrapper file Rom1.vhd when simulating
+-- the core, Rom1. When compiling the wrapper file, be sure to
 -- reference the XilinxCoreLib VHDL simulation library. For detailed
 -- instructions, please refer to the "CORE Generator Help".
 
@@ -40,17 +40,17 @@ USE ieee.std_logic_1164.ALL;
 -- synthesis translate_off
 LIBRARY XilinxCoreLib;
 -- synthesis translate_on
-ENTITY Rom IS
+ENTITY Rom1 IS
   PORT (
     clka : IN STD_LOGIC;
     addra : IN STD_LOGIC_VECTOR(9 DOWNTO 0);
     douta : OUT STD_LOGIC_VECTOR(31 DOWNTO 0)
   );
-END Rom;
+END Rom1;
 
-ARCHITECTURE Rom_a OF Rom IS
+ARCHITECTURE Rom1_a OF Rom1 IS
 -- synthesis translate_off
-COMPONENT wrapped_Rom
+COMPONENT wrapped_Rom1
   PORT (
     clka : IN STD_LOGIC;
     addra : IN STD_LOGIC_VECTOR(9 DOWNTO 0);
@@ -59,7 +59,7 @@ COMPONENT wrapped_Rom
 END COMPONENT;
 
 -- Configuration specification
-  FOR ALL : wrapped_Rom USE ENTITY XilinxCoreLib.blk_mem_gen_v7_2(behavioral)
+  FOR ALL : wrapped_Rom1 USE ENTITY XilinxCoreLib.blk_mem_gen_v7_2(behavioral)
     GENERIC MAP (
       c_addra_width => 10,
       c_addrb_width => 10,
@@ -69,7 +69,7 @@ END COMPONENT;
       c_axi_type => 1,
       c_byte_size => 9,
       c_common_clk => 0,
-      c_default_data => "0",
+      c_default_data => "FF",
       c_disable_warn_bhv_coll => 0,
       c_disable_warn_bhv_range => 0,
       c_enable_32bit_address => 0,
@@ -88,11 +88,11 @@ END COMPONENT;
       c_has_rstb => 0,
       c_has_softecc_input_regs_a => 0,
       c_has_softecc_output_regs_b => 0,
-      c_init_file_name => "no_coe_file_loaded",
+      c_init_file_name => "Rom1.mif",
       c_inita_val => "0",
       c_initb_val => "0",
       c_interface_type => 0,
-      c_load_init_file => 0,
+      c_load_init_file => 1,
       c_mem_type => 3,
       c_mux_pipeline_stages => 0,
       c_prim_type => 1,
@@ -108,7 +108,7 @@ END COMPONENT;
       c_sim_collision_check => "ALL",
       c_use_byte_wea => 0,
       c_use_byte_web => 0,
-      c_use_default_data => 0,
+      c_use_default_data => 1,
       c_use_ecc => 0,
       c_use_softecc => 0,
       c_wea_width => 1,
@@ -124,7 +124,7 @@ END COMPONENT;
 -- synthesis translate_on
 BEGIN
 -- synthesis translate_off
-U0 : wrapped_Rom
+U0 : wrapped_Rom1
   PORT MAP (
     clka => clka,
     addra => addra,
@@ -132,4 +132,4 @@ U0 : wrapped_Rom
   );
 -- synthesis translate_on
 
-END Rom_a;
+END Rom1_a;

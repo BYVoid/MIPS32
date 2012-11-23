@@ -61,15 +61,15 @@
 LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
 
-ENTITY Rom IS
+ENTITY Rom1 IS
   PORT (
     clka : IN STD_LOGIC;
     addra : IN STD_LOGIC_VECTOR(9 DOWNTO 0);
     douta : OUT STD_LOGIC_VECTOR(31 DOWNTO 0)
   );
-END Rom;
+END Rom1;
 
-ARCHITECTURE spartan3e OF Rom IS
+ARCHITECTURE spartan3e OF Rom1 IS
 BEGIN
 
   -- WARNING: This file provides an entity declaration with empty architecture, it
