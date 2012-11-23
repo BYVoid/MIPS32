@@ -129,8 +129,8 @@ architecture Behavioral of System is
   
   signal state: integer;
 begin
-  --clk <= clk_key;
-  demultiplied_clk: ClockDemul port map (clk1, rst, 500000, clk);
+  clk <= clk_key;
+  --demultiplied_clk: ClockDemul port map (clk1, rst, 500000, clk);
   
   seg7_left: Seg7 port map (
     seg7_l_num,
@@ -160,7 +160,6 @@ begin
       mem_en <= '1';
       led <= Int16_Zero;
       romaddr <= x"1FC00000";
-      
     elsif rising_edge(clk) then
       case state is
         when 0 =>
@@ -168,34 +167,29 @@ begin
           rw <= R;
           length <= Lword;
           addr <= romaddr;
-          led <= romaddr(31 downto 16);
+          led <= "111111" & romaddr(11 downto 2);
           state <= state + 1;
         when 1 =>
           -- Initial
           state <= state + 1;
-        when 2 =>
-          -- ROM_READ 1
-          state <= state + 1;
           mem_en <= '1';
-        when 3 =>
+        when 2 =>
           -- Initial
           temp <= data_out;
+          led <= data_out(15 downto 0);
           state <= state + 1;
-        when 4 =>
+        when 3 =>
           mem_en <= '0';
           rw <= W;
           length <= Lbyte;
           addr <= COM_Data_Addr;
           data_in <= temp;
           state <= state + 1;
-        when 5 =>
+        when 4 =>
           -- Initial
           state <= state + 1;
-        when 6 =>
+        when 5 =>
           -- COM_WRITE_1 8
-          state <= state + 1;
-        when 7 =>
-          -- COM_WRITE_2 9
           mem_en <= '1';
           romaddr <= std_logic_vector(unsigned(romaddr) + 4);
           state <= state + 1;
