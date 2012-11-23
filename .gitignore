@@ -15,5 +15,6 @@ test/*.dat
 test/*.out
 test/*.o
 test/*.bin
+test/*.exe
 test/*.code.txt
 test/*.result.txt
