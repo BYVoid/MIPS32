@@ -58,10 +58,6 @@
     <file xil_pn:name="src/System.ucf" xil_pn:type="FILE_UCF">
       <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
     </file>
-    <file xil_pn:name="src/test/MemoryTest1.vhd" xil_pn:type="FILE_VHDL">
-      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="247"/>
-      <association xil_pn:name="Implementation" xil_pn:seqID="247"/>
-    </file>
     <file xil_pn:name="ipcore_dir/Rom.xise" xil_pn:type="FILE_COREGENISE">
       <association xil_pn:name="Implementation" xil_pn:seqID="0"/>
     </file>
