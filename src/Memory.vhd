@@ -8,6 +8,7 @@ entity Memory is
     -- Interface --
     clk:          in      std_logic;
     rst:          in      std_logic;
+    en:           in      std_logic;
     rw:           in      RwType;
     length:       in      LenType;
     addr:         in      Int32;
@@ -67,6 +68,40 @@ architecture Behavioral of Memory is
     FLASH_READ_1,
     FLASH_WRITE_1
   );
+
+procedure print_state(
+  signal state: in StateType;
+  signal seg7_r_num: out Int4) is
+begin
+  case state is
+    when INITIAL =>
+      seg7_r_num <= std_logic_vector(to_signed(0, 4));
+    when ROM_READ =>
+      seg7_r_num <= std_logic_vector(to_signed(1, 4));
+    when RAM_READ_1 =>
+      seg7_r_num <= std_logic_vector(to_signed(2, 4));
+    when RAM_WRITE_1 =>
+      seg7_r_num <= std_logic_vector(to_signed(3, 4));
+    when RAM_WRITE_BYTE_1 =>
+      seg7_r_num <= std_logic_vector(to_signed(4, 4));
+    when RAM_WRITE_BYTE_2 =>
+      seg7_r_num <= std_logic_vector(to_signed(5, 4));
+    when COM_READ_1 =>
+      seg7_r_num <= std_logic_vector(to_signed(6, 4));
+    when COM_READ_2 =>
+      seg7_r_num <= std_logic_vector(to_signed(7, 4));
+    when COM_WRITE_1 =>
+      seg7_r_num <= std_logic_vector(to_signed(8, 4));
+    when COM_WRITE_2 =>
+      seg7_r_num <= std_logic_vector(to_signed(9, 4));
+    when FLASH_READ_1 =>
+      seg7_r_num <= std_logic_vector(to_signed(10, 4));
+    when FLASH_WRITE_1 =>
+      seg7_r_num <= std_logic_vector(to_signed(11, 4));
+    when others =>
+      seg7_r_num <= std_logic_vector(to_signed(15, 4));
+  end case;
+end;
 
 procedure rom_read(
   signal addr: in Int32;
@@ -389,8 +424,10 @@ begin
       com_wrn <= '1';
       state <= INITIAL;
     elsif rising_edge(clk) then
-      if state = INITIAL then
-        seg7_r_num <= std_logic_vector(to_signed(0, 4)); -- Debug --
+      print_state(state, seg7_r_num); -- Debug --
+      if en = '1' then
+        state <= INITIAL;
+      else
         if addr(31 downto 20) = x"000" then
           --- SRAM ---
           if rw = R then
@@ -401,6 +438,7 @@ begin
               ram2_en, ram2_oe, ram2_rw, ram2_data, ram2_addr, data_byte_temp, state);
           end if;
         elsif addr(31 downto 12) = x"1FC00" then
+          -- ROM --
           if rw = R then
             rom_read(addr, data_out, rom_addr, rom_data, state);
           end if;
@@ -424,17 +462,7 @@ begin
             flash_write(addr, data_in, flash_oe, flash_we, flash_data, flash_addr, state);
           end if;
         end if;
-      else
-        ram_read(length, addr, data_out, ram1_en, ram1_oe, ram1_rw, ram1_data, ram1_addr,
-          ram2_en, ram2_oe, ram2_rw, ram2_data, ram2_addr, state);
-        ram_write(length, addr, data_in, ram1_en, ram1_oe, ram1_rw, ram1_data, ram1_addr,
-          ram2_en, ram2_oe, ram2_rw, ram2_data, ram2_addr, data_byte_temp, state);
-        rom_read(addr, data_out, rom_addr, rom_data, state);
-        com_read(com_ready, com_rdn, ram1_en, ram2_en, ram1_data(7 downto 0), data_out, state);
-        com_write(com_tbre, com_tsre, data_in, com_wrn, ram1_en, ram2_en, ram1_data(7 downto 0), state);
-        flash_read(addr, data_out, flash_oe, flash_we, flash_data, flash_addr, state);
-        flash_write(addr, data_in, flash_oe, flash_we, flash_data, flash_addr, state);
-      end if;
-    end if;
+      end if; -- en
+    end if; -- clk
   end process;
 end Behavioral;
