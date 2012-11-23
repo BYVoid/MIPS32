@@ -13,7 +13,7 @@ package Common is
     ALU_EQ, ALU_NE,
     ALU_LT, ALU_LTU,
     ALU_GTZ, ALU_LEZ, ALU_GEZ);
-    
+
   subtype WaitCycles is integer range 0 to 15;
 
   subtype Int32 is std_logic_vector(31 downto 0);
@@ -23,25 +23,25 @@ package Common is
   subtype Int23 is std_logic_vector(22 downto 0);
   subtype Int18 is std_logic_vector(17 downto 0);
   subtype Int16 is std_logic_vector(15 downto 0);
-  subtype Int10 is std_logic_vector(9  downto 0);
-  subtype Int8  is std_logic_vector(7  downto 0);
-  subtype Int6  is std_logic_vector(5  downto 0);
-  subtype Int5  is std_logic_vector(4  downto 0);
-  subtype Int4  is std_logic_vector(3  downto 0);
-  
+  subtype Int10 is std_logic_vector(9 downto 0);
+  subtype Int8 is std_logic_vector(7 downto 0);
+  subtype Int6 is std_logic_vector(5 downto 0);
+  subtype Int5 is std_logic_vector(4 downto 0);
+  subtype Int4 is std_logic_vector(3 downto 0);
+
   subtype Signed32 is signed(31 downto 0);
   subtype Unsigned32 is unsigned(31 downto 0);
 
-  constant Int8_Zero:     Int8  := "00000000";
-  constant Int8_Z:        Int8  := "ZZZZZZZZ";
-  constant Int16_Zero:    Int16 := "0000000000000000";
-  constant Int16_Z:       Int16 := "ZZZZZZZZZZZZZZZZ";
-  constant Int30_Zero:    Int30 := "000000000000000000000000000000";
-  constant Int31_Zero:    Int31 := "0000000000000000000000000000000";
-  constant Int32_Zero:    Int32 := "00000000000000000000000000000000";
-  constant Int32_Z:       Int32 := "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ";
-  constant COM_Data_Addr: Int32 := x"1FD003F8";
-  constant COM_Stat_Addr: Int32 := x"1FD003FC";
+  constant Int8_Zero     : Int8  := "00000000";
+  constant Int8_Z        : Int8  := "ZZZZZZZZ";
+  constant Int16_Zero    : Int16 := "0000000000000000";
+  constant Int16_Z       : Int16 := "ZZZZZZZZZZZZZZZZ";
+  constant Int30_Zero    : Int30 := "000000000000000000000000000000";
+  constant Int31_Zero    : Int31 := "0000000000000000000000000000000";
+  constant Int32_Zero    : Int32 := "00000000000000000000000000000000";
+  constant Int32_Z       : Int32 := "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ";
+  constant COM_Data_Addr : Int32 := x"1FD003F8";
+  constant COM_Stat_Addr : Int32 := x"1FD003FC";
 
   -- opcode
   constant op_special : Int6 := "000000";
@@ -63,6 +63,7 @@ package Common is
   constant op_lh      : Int6 := "100001";
   constant op_lw      : Int6 := "100011";
   constant op_lbu     : Int6 := "100100";
+  constant op_lhu     : Int6 := "100101";
   constant op_sb      : Int6 := "101000";
   constant op_sh      : Int6 := "101001";
   constant op_sw      : Int6 := "101011";
@@ -95,18 +96,55 @@ package Common is
   -- rt
   constant rt_bltz : Int5 := "00000";
   constant rt_bgez : Int5 := "00001";
-  
-  function boolean_to_std_logic(cond: boolean) return std_logic;
+
+  function boolean_to_std_logic(cond : boolean) return std_logic;
+  function to_hex_string(data_in     : std_logic_vector) return string;
 
 end Common;
 
 package body Common is
-  function boolean_to_std_logic(cond: boolean) return std_logic is 
-  begin 
-    if cond then 
-      return('1'); 
-    else 
-      return('0'); 
-    end if; 
-  end function boolean_to_std_logic; 
+  function boolean_to_std_logic(cond : boolean) return std_logic is
+  begin
+    if cond then
+      return('1');
+    else
+      return('0');
+    end if;
+  end function boolean_to_std_logic;
+
+  function vec_to_hex(byte_in : std_logic_vector(3 downto 0)) return character is
+    variable int : integer;
+  begin
+    int := to_integer(unsigned(byte_in));
+    if int < 10 then
+      return (character'val(character'pos('0') + int));
+    else
+      return (character'val(character'pos('a') + int - 10));
+    end if;
+  end function vec_to_hex;
+
+  function to_hex_string(data_in : std_logic_vector) return string is
+  begin
+    if data_in'length = 32 then
+      return ("0x" &
+              vec_to_hex(data_in(31 downto 28)) &
+              vec_to_hex(data_in(27 downto 24)) &
+              vec_to_hex(data_in(23 downto 20)) &
+              vec_to_hex(data_in(19 downto 16)) &
+              vec_to_hex(data_in(15 downto 12)) &
+              vec_to_hex(data_in(11 downto 8)) &
+              vec_to_hex(data_in(7 downto 4)) &
+              vec_to_hex(data_in(3 downto 0)));
+    elsif data_in'length = 16 then
+      return ("0x" &
+              vec_to_hex(data_in(15 downto 12)) &
+              vec_to_hex(data_in(11 downto 8)) &
+              vec_to_hex(data_in(7 downto 4)) &
+              vec_to_hex(data_in(3 downto 0)));
+    elsif data_in'length = 8 then
+      return ("0x" &
+              vec_to_hex(data_in(7 downto 4)) &
+              vec_to_hex(data_in(3 downto 0)));
+    end if;
+  end function to_hex_string;
 end Common;

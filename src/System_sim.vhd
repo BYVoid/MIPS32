@@ -13,8 +13,8 @@ architecture Behavioral of System_sim is
       load_wait  : WaitCycles;
       store_wait : WaitCycles);
     port (
-      clk   : in std_logic;
-      rst   : in std_logic;
+      clk : in std_logic;
+      rst : in std_logic;
 
       -- RAM
       ram_en       : out std_logic;
@@ -25,6 +25,8 @@ architecture Behavioral of System_sim is
       ram_data_out : in  std_logic_vector (31 downto 0));
   end component;
   component MemoryVirtual
+    generic (
+      debug : boolean);
     port (
       clk      : in  std_logic;
       rst      : in  std_logic;
@@ -54,9 +56,9 @@ begin
   CPU_1 : CPU
     generic map (
       debug      => true,
-      fetch_wait => 0,
-      load_wait  => 0,
-      store_wait => 0)
+      fetch_wait => 1,
+      load_wait  => 1,
+      store_wait => 1)
     port map (
       clk          => clk,
       rst          => rst,
@@ -68,6 +70,8 @@ begin
       ram_data_out => ram_data_out);
 
   MemoryVirtual_1 : MemoryVirtual
+    generic map (
+      debug => true)
     port map (
       clk      => clk,
       rst      => rst,
