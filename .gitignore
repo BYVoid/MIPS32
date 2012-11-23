@@ -13,5 +13,7 @@ src/*.in
 src/*.result
 test/*.dat
 test/*.out
+test/*.o
+test/*.bin
 test/*.code.txt
 test/*.result.txt
