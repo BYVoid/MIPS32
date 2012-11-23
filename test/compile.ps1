@@ -23,3 +23,7 @@ mips-sde-elf-objdump -EL -d --prefix-addresses --show-raw-insn "$fileout.out" | 
 cat "$fileout.code.txt" | where{$_ -match '^\w+ <.+> \w+ +.+$'} | %{$_ -replace '^(\w+) <.+> (\w+) +.+$','$1 $2'} | out-file -encoding ascii "$fileout.dat"
 
 ./bintocoe "$fileout.bin" "$fileout.coe"
+
+rm "$fileout.o"
+rm "$fileout.out"
+rm "$fileout.bin"
