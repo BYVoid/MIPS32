@@ -161,18 +161,87 @@ begin
     procedure decode_debug is
     begin
       if debug then
-        write(L, to_bitvector(op));
-        write(L, string'(" | "));
-        write(L, to_bitvector(rs));
-        write(L, string'(" | "));
-        write(L, to_bitvector(rt));
-        write(L, string'(" | "));
-        write(L, to_bitvector(rd));
-        write(L, string'(" | "));
-        write(L, to_bitvector(sa));
-        write(L, string'(" | "));
-        write(L, to_bitvector(func));
-        writeline(output, L);
+        case op is
+          when op_special =>
+            write(L, to_bitvector(op));
+            write(L, string'(" | "));
+            write(L, to_bitvector(rs));
+            write(L, string'(" | "));
+            write(L, to_bitvector(rt));
+            write(L, string'(" | "));
+            write(L, to_bitvector(rd));
+            write(L, string'(" | "));
+            write(L, to_bitvector(sa));
+            write(L, string'(" | "));
+            write(L, to_bitvector(func));
+            writeline(output, L);
+            write(L, opcode_names(to_integer(unsigned(op))));
+            write(L, string'("  "));
+            write(L, string'("rs:"));
+            write(L, to_integer(unsigned(rs)), right, 2);
+            write(L, string'("   "));
+            write(L, string'("rt:"));
+            write(L, to_integer(unsigned(rt)), right, 2);
+            write(L, string'("   "));
+            write(L, string'("rd:"));
+            write(L, to_integer(unsigned(rd)), right, 2);
+            write(L, string'("   "));
+            write(L, string'("sa:"));
+            write(L, to_integer(unsigned(sa)), right, 2);
+            write(L, string'("   "));
+            write(L, sp_func_names(to_integer(unsigned(func))));
+            writeline(output, L);
+          when op_regimm =>
+            write(L, to_bitvector(op));
+            write(L, string'(" | "));
+            write(L, to_bitvector(rs));
+            write(L, string'(" | "));
+            write(L, to_bitvector(rt));
+            write(L, string'(" | "));
+            write(L, to_bitvector(imm));
+            writeline(output, L);
+            write(L, opcode_names(to_integer(unsigned(op))));
+            write(L, string'("  "));
+            write(L, string'("rs:"));
+            write(L, to_integer(unsigned(rs)), right, 2);
+            write(L, string'("   "));
+            write(L, ri_rt_names(to_integer(unsigned(rt))));
+            write(L, string'("    "));
+            write(L, string'("imm:"));
+            write(L, to_hex_string(imm));
+            writeline(output, L);
+          when op_j | op_jal =>
+            write(L, to_bitvector(op));
+            write(L, string'(" | "));
+            write(L, to_bitvector(instr_index));
+            writeline(output, L);
+            write(L, opcode_names(to_integer(unsigned(op))));
+            write(L, string'("  "));
+            write(L, string'("instr_index:"));
+            write(L, to_hex_string(instr_index));
+            writeline(output, L);
+          when others =>
+            write(L, to_bitvector(op));
+            write(L, string'(" | "));
+            write(L, to_bitvector(rs));
+            write(L, string'(" | "));
+            write(L, to_bitvector(rt));
+            write(L, string'(" | "));
+            write(L, to_bitvector(imm));
+            writeline(output, L);
+            write(L, opcode_names(to_integer(unsigned(op))));
+            write(L, string'("  "));
+            write(L, string'("rs:"));
+            write(L, to_integer(unsigned(rs)), right, 2);
+            write(L, string'("   "));
+            write(L, string'("rt:"));
+            write(L, to_integer(unsigned(rt)), right, 2);
+            write(L, string'("   "));
+            write(L, string'("imm:"));
+            write(L, to_hex_string(imm));
+            writeline(output, L);
+        end case;
+        
       end if;
     end procedure;
     

@@ -33,18 +33,18 @@ package Common is
   subtype Signed32 is signed(31 downto 0);
   subtype Unsigned32 is unsigned(31 downto 0);
 
-  constant Int8_Zero:     Int8  := "00000000";
-  constant Int8_Z:        Int8  := "ZZZZZZZZ";
-  constant Int16_Zero:    Int16 := "0000000000000000";
-  constant Int16_Z:       Int16 := "ZZZZZZZZZZZZZZZZ";
-  constant Int24_Zero:    Int24 := "000000000000000000000000";
-  constant Int30_Zero:    Int30 := "000000000000000000000000000000";
-  constant Int31_Zero:    Int31 := "0000000000000000000000000000000";
-  constant Int32_Zero:    Int32 := "00000000000000000000000000000000";
-  constant Int32_Z:       Int32 := "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ";
-  constant COM_Data_Addr: Int32 := x"1FD003F8";
-  constant COM_Stat_Addr: Int32 := x"1FD003FC";
-  
+  constant Int8_Zero     : Int8  := "00000000";
+  constant Int8_Z        : Int8  := "ZZZZZZZZ";
+  constant Int16_Zero    : Int16 := "0000000000000000";
+  constant Int16_Z       : Int16 := "ZZZZZZZZZZZZZZZZ";
+  constant Int24_Zero    : Int24 := "000000000000000000000000";
+  constant Int30_Zero    : Int30 := "000000000000000000000000000000";
+  constant Int31_Zero    : Int31 := "0000000000000000000000000000000";
+  constant Int32_Zero    : Int32 := "00000000000000000000000000000000";
+  constant Int32_Z       : Int32 := "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ";
+  constant COM_Data_Addr : Int32 := x"1FD003F8";
+  constant COM_Stat_Addr : Int32 := x"1FD003FC";
+
   -- opcode
   constant op_special : Int6 := "000000";
   constant op_regimm  : Int6 := "000001";
@@ -99,12 +99,60 @@ package Common is
   constant rt_bltz : Int5 := "00000";
   constant rt_bgez : Int5 := "00001";
 
+  type opcode_name_array is array (0 to 63) of string(1 to 7);
+  type sp_func_name_array is array (0 to 63) of string(1 to 7);
+  type ri_rt_name_array is array (0 to 1) of string(1 to 4);
+
+  constant opcode_names  : opcode_name_array;
+  constant sp_func_names : sp_func_name_array;
+  constant ri_rt_names   : ri_rt_name_array;
+
   function boolean_to_std_logic(cond : boolean) return std_logic;
   function to_hex_string(data_in     : std_logic_vector) return string;
 
 end Common;
 
 package body Common is
+  
+  constant opcode_names : opcode_name_array :=
+    ("SPECIAL", "REGIMMH", "J      ", "JAL    ",
+     "BEQ    ", "BNE    ", "BLEZ   ", "BGTZ   ",
+     "ADDI   ", "ADDIU  ", "SLTI   ", "SLTIU  ",
+     "ANDI   ", "ORI    ", "XORI   ", "LUI    ",
+     "COP0   ", "COP1   ", "COP2   ", "COP1X  ",
+     "BEQL   ", "BNEL   ", "BLEZL  ", "BGTZL  ",
+     "UNDEF18", "UNDEF19", "UNDEF1A", "UNDEF1B",
+     "UNDEF1C", "JALX   ", "UNDEF1E", "UNDEF1F",
+     "LB     ", "LH     ", "LWL    ", "LW     ",
+     "LBU    ", "LHU    ", "LWR    ", "UNDEF27",
+     "SB     ", "SH     ", "SWL    ", "SW     ",
+     "UNDEF2C", "UNDEF2D", "SWR    ", "CACHE  ",
+     "LL     ", "LWC1   ", "LWC2   ", "PREF   ",
+     "UNDEF34", "LDC1   ", "LDC2   ", "UNDEF37",
+     "SC     ", "SWC1   ", "SWC2   ", "UNDEF3B",
+     "UNDEF3C", "SDC1   ", "SDC2   ", "UNDEF3F");
+
+  constant sp_func_names : sp_func_name_array :=
+    ("SLL    ", "MOVCI  ", "SRL    ", "SRA    ",
+     "SLLV   ", "UNDEF05", "SRLV   ", "SRAV   ",
+     "JR     ", "JALR   ", "MOVZ   ", "MOVN   ",
+     "SYSCALL", "BREAK  ", "UNDEF0E", "SYNC   ",
+     "MFHI   ", "MTHI   ", "MFLO   ", "MTLO   ",
+     "UNDEF14", "UNDEF15", "UNDEF16", "UNDEF17",
+     "MULT   ", "MULTU  ", "DIV    ", "DVIU   ",
+     "UNDEF1C", "UNDEF1D", "UNDEF1E", "UNDEF1F",
+     "ADD    ", "ADDU   ", "SUB    ", "SUBU   ",
+     "AND    ", "OR     ", "XOR    ", "NOR    ",
+     "UNDEF28", "UNDEF29", "SLT    ", "SLTU   ",
+     "UNDEF2C", "UNDEF2D", "UNDEF2E", "UNDEF2F",
+     "TGE    ", "TGEU   ", "TLT    ", "TLTU   ",
+     "TEQ    ", "UNDEF35", "TNE    ", "UNDEF37",
+     "UNDEF38", "UNDEF39", "UNDEF3A", "UNDEF3B",
+     "UNDEF3C", "UNDEF3D", "UNDEF3E", "UNDEF3F");
+
+  constant ri_rt_names : ri_rt_name_array :=
+    ("BLTZ", "BGEZ");
+  
   function boolean_to_std_logic(cond : boolean) return std_logic is
   begin
     if cond then
@@ -137,6 +185,15 @@ package body Common is
               vec_to_hex(data_in(11 downto 8)) &
               vec_to_hex(data_in(7 downto 4)) &
               vec_to_hex(data_in(3 downto 0)));
+    elsif data_in'length = 26 then
+      return ("0x" &
+              vec_to_hex("00" & data_in(25 downto 24)) &
+              vec_to_hex(data_in(23 downto 20)) &
+              vec_to_hex(data_in(19 downto 16)) &
+              vec_to_hex(data_in(15 downto 12)) &
+              vec_to_hex(data_in(11 downto 8)) &
+              vec_to_hex(data_in(7 downto 4)) &
+              vec_to_hex(data_in(3 downto 0)));
     elsif data_in'length = 16 then
       return ("0x" &
               vec_to_hex(data_in(15 downto 12)) &
@@ -148,5 +205,6 @@ package body Common is
               vec_to_hex(data_in(7 downto 4)) &
               vec_to_hex(data_in(3 downto 0)));
     end if;
+    return "";
   end function to_hex_string;
 end Common;
