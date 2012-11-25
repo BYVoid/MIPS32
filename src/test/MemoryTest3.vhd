@@ -172,28 +172,31 @@ begin
         when 1 =>
           -- Initial
           state <= state + 1;
-          mem_en <= '1';
         when 2 =>
           -- Initial
+          state <= state + 1;
+        when 3 =>
+          mem_en <= '1';
           temp <= data_out;
           led <= data_out(15 downto 0);
           state <= state + 1;
-        when 3 =>
+          
+        when 4 =>
           mem_en <= '0';
           rw <= W;
-          length <= Lbyte;
+          length <= Lword;
           addr <= COM_Data_Addr;
           data_in <= temp;
           state <= state + 1;
-        when 4 =>
+        when 5 =>
           -- Initial
           state <= state + 1;
-        when 5 =>
+        when 6 =>
           -- COM_WRITE_1 8
           mem_en <= '1';
-          romaddr <= std_logic_vector(unsigned(romaddr) + 4);
           state <= state + 1;
         when others =>
+          romaddr <= std_logic_vector(unsigned(romaddr) + 4);
           state <= 0;
       end case;
       seg7_l_num <= std_logic_vector(to_signed(state, 4));

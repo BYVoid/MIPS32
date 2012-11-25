@@ -101,7 +101,7 @@ begin
 
   rom_instance: Rom1 port map (
     clka => clk,
-    addra => "0000000000",
+    addra => "0000000010",
     douta => temp
   );
   
