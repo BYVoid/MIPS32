@@ -2,12 +2,13 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use std.textio.all;
-use std.env.all;
+--sim: use std.env.all;
 use work.Common.all;
 
 entity CPU is
   generic (
     debug      : boolean;
+    start_addr : std_logic_vector (31 downto 0);
     fetch_wait : WaitCycles;
     load_wait  : WaitCycles;
     store_wait : WaitCycles
@@ -17,12 +18,12 @@ entity CPU is
     rst : in std_logic;
 
     -- RAM
-    ram_en       : out std_logic                      := '1';
-    ram_rw       : out RwType;
-    ram_length   : out LenType;
-    ram_addr     : out std_logic_vector (31 downto 0) := Int32_Zero;
-    ram_data_in  : out std_logic_vector (31 downto 0);
-    ram_data_out : in  std_logic_vector (31 downto 0)
+    mem_en       : out std_logic                      := '1';
+    mem_rw       : out RwType;
+    mem_length   : out LenType;
+    mem_addr     : out std_logic_vector (31 downto 0) := Int32_Zero;
+    mem_data_in  : out std_logic_vector (31 downto 0);
+    mem_data_out : in  std_logic_vector (31 downto 0)
     );
 end CPU;
 
@@ -99,6 +100,7 @@ begin
 
   process (clk, rst)
     type StateType is (
+      HALT,
       IF_0,                             -- Instruction Fetch
       IF_1,                             -- wait for fetching
       ID_0,                             -- Instruction Decode
@@ -131,7 +133,7 @@ begin
         write(L, string'("instruction invalid"));
         writeline(output, L);
       end if;
-      finish(0);
+      --sim: finish(0);
     end procedure;
 
     procedure halt is
@@ -140,7 +142,7 @@ begin
         write(L, string'("halt"));
         writeline(output, L);
       end if;
-      finish(0);
+      --sim: finish(0);
     end procedure;
 
     procedure fetch_debug(
@@ -149,6 +151,27 @@ begin
       if debug then
         write(L, string'("fetch instr @ "));
         write(L, to_hex_string(pc));
+        write(L, string'(" ("));
+        write(L, to_bitvector(pc));
+        write(L, string'(")"));
+        writeline(output, L);
+      end if;
+    end procedure;
+
+    procedure decode_debug is
+    begin
+      if debug then
+        write(L, to_bitvector(op));
+        write(L, string'(" | "));
+        write(L, to_bitvector(rs));
+        write(L, string'(" | "));
+        write(L, to_bitvector(rt));
+        write(L, string'(" | "));
+        write(L, to_bitvector(rd));
+        write(L, string'(" | "));
+        write(L, to_bitvector(sa));
+        write(L, string'(" | "));
+        write(L, to_bitvector(func));
         writeline(output, L);
       end if;
     end procedure;
@@ -211,6 +234,16 @@ begin
       end if;
     end procedure;
     
+    procedure write_reg(
+      reg  : std_logic_vector(4 downto 0);
+      data : std_logic_vector(31 downto 0)) is
+    begin
+      reg_rw     <= W;
+      reg_wrReg  <= reg;
+      reg_wrData <= data;
+      reg_debug(W, reg, data);
+    end procedure;
+    
   begin
     if rst = '0' then
       --reset
@@ -218,11 +251,13 @@ begin
         write(L, string'("booting"));
         writeline(output, L);
       end if;
-      npc   := Int32_Zero;
+      npc   := start_addr;
       state := IF_0;
       
     elsif rising_edge(clk) then
       case state is
+        when HALT =>
+          -- do nothing
         when IF_0 =>
           newline;
           -- finish writing to register
@@ -232,10 +267,10 @@ begin
           npc        := std_logic_vector(unsigned(pc) + to_unsigned(4, 32));
           -- prepare to fetch an instruction
           fetch_debug(pc);
-          ram_en     <= '0';
-          ram_rw     <= R;
-          ram_length <= Lword;
-          ram_addr   <= pc;
+          mem_en     <= '0';
+          mem_rw     <= R;
+          mem_length <= Lword;
+          mem_addr   <= pc;
           state      := IF_1;
         when IF_1 =>
           -- wait until fetching complete
@@ -248,8 +283,9 @@ begin
         when others =>
           if state = ID_0 then
             -- instruction fetched
-            ram_en   <= '1';
-            instr    := ram_data_out;
+            mem_en   <= '1';
+            instr    := mem_data_out;
+            decode_debug;
             alu_op   <= op;
             alu_func <= func;
             alu_rt   <= rt;
@@ -260,7 +296,22 @@ begin
               case func is
                 when func_syscall =>
                   halt;
+                  state := HALT;
                 when func_jr | func_jalr =>
+                  case state is
+                    when ID_0 =>
+                      reg_rdReg1 <= rs;
+                      state      := WB_0;
+                    when WB_0 =>
+                      reg_debug(R, reg_rdReg1, reg_rdData1);
+                      npc := reg_rdData1;
+                      if func = func_jalr then
+                        write_reg(rd, std_logic_vector(unsigned(pc) + to_unsigned(8, 32)));
+                      end if;
+                      state := IF_0;
+                    when others =>
+                      -- impossible
+                  end case;
                 when func_sll | func_srl | func_sra |
                   func_sllv | func_srlv | func_srav |
                   func_addu | func_subu |
@@ -279,7 +330,7 @@ begin
                       end if;
                       reg_debug(R, reg_rdReg2, reg_rdData2);
                       if func = func_sll or func = func_srl or func = func_sra then
-                        alu_a <= Int16_Zero & Int8_Zero & "000" & sa;
+                        alu_a <= Int24_Zero & "000" & sa;
                       else
                         alu_a <= reg_rdData1;
                       end if;
@@ -287,11 +338,8 @@ begin
                       state := WB_0;
                     when WB_0 =>
                       alu_debug(alu_a, alu_b, alu_r);
-                      reg_rw     <= W;
-                      reg_wrReg  <= rd;
-                      reg_wrData <= alu_r;
-                      reg_debug(W, rd, alu_r);
-                      state      := IF_0;
+                      write_reg(rd, alu_r);
+                      state := IF_0;
                     when others =>
                       -- impossible;
                   end case;
@@ -299,10 +347,45 @@ begin
                   instr_invalid;
               end case;
             when op_regimm | op_beq | op_bne | op_blez | op_bgtz =>
-              if op = op_regimm and rt /= rt_bltz and rt /= rt_bgez then
-                instr_invalid;
-              end if;
-            when op_j | op_jal                                              =>
+              case state is
+                when ID_0 =>
+                  if op = op_regimm and rt /= rt_bltz and rt /= rt_bgez then
+                    instr_invalid;
+                  end if;
+                  reg_rdReg1 <= rs;
+                  reg_rdReg2 <= rt;
+                  state      := EX_0;
+                when EX_0 =>
+                  reg_debug(R, reg_rdReg1, reg_rdData1);
+                  if op = op_beq or op = op_bne then
+                    reg_debug(R, reg_rdReg2, reg_rdData2);
+                  end if;
+                  alu_a <= reg_rdData1;
+                  alu_b <= reg_rdData2;
+                  state := WB_0;
+                when WB_0 =>
+                  if alu_r(0) = '1' then
+                    npc := std_logic_vector(unsigned(pc) + to_unsigned(4, 32) + unsigned(resize(signed(imm & "00"), 32)));
+                  end if;
+                  state := IF_0;
+                when others =>
+                  -- impossible
+              end case;
+            when op_j | op_jal =>
+              case state is
+                when ID_0 =>
+                  npc := npc(31 downto 28) & instr_index & "00";
+                  if op = op_j then
+                    state := IF_0;
+                  else
+                    state := WB_0;
+                  end if;
+                when WB_0 =>
+                  write_reg("11111", std_logic_vector(unsigned(pc) + to_unsigned(8, 32)));
+                  state := IF_0;
+                when others =>
+                  -- impossible
+              end case;
             when op_addiu | op_slti | op_sltiu | op_andi | op_ori | op_xori =>
               case state is
                 when ID_0 =>
@@ -319,20 +402,14 @@ begin
                   state := WB_0;
                 when WB_0 =>
                   alu_debug(alu_a, alu_b, alu_r);
-                  reg_rw     <= W;
-                  reg_wrReg  <= rt;
-                  reg_wrData <= alu_r;
-                  reg_debug(W, rt, alu_r);
-                  state      := IF_0;
+                  write_reg(rt, alu_r);
+                  state := IF_0;
                 when others =>
                   -- impossible
               end case;
             when op_lui =>
-              reg_rw     <= W;
-              reg_wrReg  <= rt;
-              reg_wrData <= imm & Int16_Zero;
-              reg_debug(W, rt, imm & Int16_Zero);
-              state      := IF_0;
+              write_reg(rt, imm & Int16_Zero);
+              state := IF_0;
             when op_lb | op_lh | op_lw | op_lbu | op_lhu =>
               case state is
                 when ID_0 =>
@@ -345,15 +422,15 @@ begin
                   state := MEM_0;
                 when MEM_0 =>
                   alu_debug(alu_a, alu_b, alu_r);
-                  ram_en   <= '0';
-                  ram_rw   <= R;
-                  ram_addr <= alu_r;
+                  mem_en   <= '0';
+                  mem_rw   <= R;
+                  mem_addr <= alu_r;
                   if op = op_lw then
-                    ram_length <= Lword;
+                    mem_length <= Lword;
                   elsif op = op_lh or op = op_lhu then
-                    ram_length <= Lhalf;
+                    mem_length <= Lhalf;
                   else
-                    ram_length <= Lbyte;
+                    mem_length <= Lbyte;
                   end if;
                   state := MEM_1;
                 when MEM_1 =>
@@ -365,18 +442,13 @@ begin
                     load_count := load_count + 1;
                   end if;
                 when WB_0 =>
-                  ram_en    <= '1';
-                  reg_rw    <= W;
-                  reg_wrReg <= rt;
+                  mem_en <= '1';
                   if op = op_lb then
-                    reg_wrData <= sign_extend(ram_data_out(7 downto 0));
-                    reg_debug(W, rt, sign_extend(ram_data_out(7 downto 0)));
+                    write_reg(rt, sign_extend(mem_data_out(7 downto 0)));
                   elsif op = op_lh then
-                    reg_wrData <= sign_extend(ram_data_out(15 downto 0));
-                    reg_debug(W, rt, sign_extend(ram_data_out(15 downto 0)));
+                    write_reg(rt, sign_extend(mem_data_out(15 downto 0)));
                   else
-                    reg_wrData <= ram_data_out;
-                    reg_debug(W, rt, ram_data_out);
+                    write_reg(rt, mem_data_out);
                   end if;
                   state := IF_0;
                 when others =>
@@ -396,21 +468,23 @@ begin
                   state := MEM_0;
                 when MEM_0 =>
                   alu_debug(alu_a, alu_b, alu_r);
-                  ram_en      <= '0';
-                  ram_rw      <= W;
-                  ram_addr    <= alu_r;
-                  ram_data_in <= reg_rdData2;
+                  mem_en      <= '0';
+                  mem_rw      <= W;
+                  mem_addr    <= alu_r;
+                  mem_data_in <= reg_rdData2;
                   if op = op_sw then
-                    ram_length <= Lword;
+                    mem_length <= Lword;
                   elsif op = op_sh then
-                    ram_length <= Lhalf;
+                    mem_length <= Lhalf;
                   else
-                    ram_length <= Lbyte;
+                    mem_length <= Lbyte;
                   end if;
                   state := MEM_1;
                 when MEM_1 =>
                   -- wait until storing complete
-                  if store_count = store_wait then
+                  if store_count = store_wait + 1 then
+                    mem_en      <= '1';
+                    mem_rw      <= R;
                     store_count := 0;
                     state       := IF_0;
                   else

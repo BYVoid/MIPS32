@@ -23,8 +23,10 @@ if (test-path work) {rm -force -recurse work}
 # create the work library 
 vlib work
 
+# generate CPU_sim.vhd
+cat CPU.vhd | %{$_ -replace ('--sim: ', '')} |out-file -encoding ascii CPU_sim.vhd
 # compile VHDL quietly
-vcom -quiet Common.vhd MemoryVirtual.vhd AluOpEncoder.vhd ALU.vhd RegisterFile.vhd CPU.vhd System_sim.vhd
+vcom -quiet Common.vhd MemoryVirtual.vhd AluOpEncoder.vhd ALU.vhd RegisterFile.vhd CPU_sim.vhd System_sim.vhd
 
 # estimate the simulation time
 $line = (cat ./memory.dat).count

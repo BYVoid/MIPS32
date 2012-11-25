@@ -13,4 +13,5 @@ if (test-path *wlf*) {rm -force *wlf*}
 if (test-path work) {rm -force -recurse work}
 if (test-path *.in) {rm -force *.in}
 if (test-path *.result) {rm -force *.result}
+if (test-path CPU_sim.vhd) {rm -force CPU_sim.vhd}
 cd ../test
