@@ -2,7 +2,7 @@
 # then convert to memory image(.dat) for simulation
 
 if ($args.count -eq 1) {  
-  $startaddr = "0x00000000"
+  $startaddr = "0xBFC00000"
 } elseif ($args.count -eq 2) {
   if ($args[1].gettype().name -eq "Int32") {
     $startaddr = "{0:x}" -f $args[1]   
@@ -11,7 +11,7 @@ if ($args.count -eq 1) {
     exit
   }
 } else {
-  echo "USAGE: ./gencoe {filename} [{startaddr}=0x00000000]"
+  echo "USAGE: ./gencoe {filename} [{startaddr}=0xBFC00000]"
   exit
 }
 
