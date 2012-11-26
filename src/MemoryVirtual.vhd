@@ -50,6 +50,7 @@ begin
       variable data_var : integer;
       variable i        : integer;
       variable word     : Int32;
+      variable addr     : Int32;
     begin
       if debug then
         write(L, string'("loading memory from file"));
@@ -82,8 +83,12 @@ begin
         if debug then
           writeline(output, L);
         end if;
-
-        word            := std_logic_vector(to_signed(data_var, 32));
+        
+        word     := std_logic_vector(to_signed(data_var, 32));
+        addr     := std_logic_vector(to_signed(addr_var, 32));
+        addr     := "000" & addr(28 downto 0);
+        addr_var := to_integer(unsigned(addr));
+        
         mem(addr_var)   := word(7 downto 0);
         mem(addr_var+1) := word(15 downto 8);
         mem(addr_var+2) := word(23 downto 16);

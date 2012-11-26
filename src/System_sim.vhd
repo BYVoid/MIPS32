@@ -50,14 +50,14 @@ architecture Behavioral of System_sim is
   signal mem_data_in  : std_logic_vector (31 downto 0);
   signal mem_data_out : std_logic_vector (31 downto 0);
 
-  constant clk_period : time := 100 ns;
+  constant clk_period : time := 40 ns;
   
 begin
 
   CPU_1 : CPU
     generic map (
       debug      => true,
-      start_addr => Int32_Zero,
+      start_addr => x"A0" & Int24_Zero,
       fetch_wait => 1,
       load_wait  => 1,
       store_wait => 1)

@@ -136,6 +136,16 @@ begin
       end if;
       --sim: finish(0);
     end procedure;
+    
+    procedure bad_addr is
+    begin
+      if debug then
+        write(L, string'("bad address"));
+        writeline(output, L);
+      end if;
+      --sim: finish(0);
+    end procedure;
+    
 
     procedure halt is
     begin
@@ -317,7 +327,16 @@ begin
     procedure conv_mem_addr(
       addr : std_logic_vector (31 downto 0)) is
     begin
-      mem_addr <= addr;
+      case addr(31 downto 28) is
+        when x"8" | x"9" | x"A" | x"B" =>
+          if mode = Kernel then
+            mem_addr <= "000" & addr(28 downto 0);
+          else
+            -- exception 
+          end if;
+        when others =>
+          bad_addr;        
+      end case;
     end procedure;
     
   begin
