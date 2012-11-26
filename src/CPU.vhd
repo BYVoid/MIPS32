@@ -117,6 +117,7 @@ begin
     variable fetch_count : WaitCycles := 0;
     variable load_count  : WaitCycles := 0;
     variable store_count : WaitCycles := 0;
+    variable mode        : ModeType   := Kernel;
 
     alias op          : Int6 is instr(31 downto 26);
     alias rs          : Int5 is instr(25 downto 21);
@@ -313,6 +314,12 @@ begin
       reg_debug(W, reg, data);
     end procedure;
     
+    procedure conv_mem_addr(
+      addr : std_logic_vector (31 downto 0)) is
+    begin
+      mem_addr <= addr;
+    end procedure;
+    
   begin
     if rst = '0' then
       --reset
@@ -320,6 +327,16 @@ begin
         write(L, string'("booting"));
         writeline(output, L);
       end if;
+
+      fetch_count := 0;
+      load_count  := 0;
+      store_count := 0;
+      mode        := Kernel;
+
+      mem_en <= '1';
+      mem_rw <= R;
+      reg_rw <= R;
+
       npc   := start_addr;
       state := IF_0;
       
@@ -339,7 +356,7 @@ begin
           mem_en     <= '0';
           mem_rw     <= R;
           mem_length <= Lword;
-          mem_addr   <= pc;
+          conv_mem_addr(pc);
           state      := IF_1;
         when IF_1 =>
           -- wait until fetching complete
@@ -493,7 +510,7 @@ begin
                   alu_debug(alu_a, alu_b, alu_r);
                   mem_en   <= '0';
                   mem_rw   <= R;
-                  mem_addr <= alu_r;
+                  conv_mem_addr(alu_r);
                   if op = op_lw then
                     mem_length <= Lword;
                   elsif op = op_lh or op = op_lhu then
@@ -539,8 +556,8 @@ begin
                   alu_debug(alu_a, alu_b, alu_r);
                   mem_en      <= '0';
                   mem_rw      <= W;
-                  mem_addr    <= alu_r;
                   mem_data_in <= reg_rdData2;
+                  conv_mem_addr(alu_r);
                   if op = op_sw then
                     mem_length <= Lword;
                   elsif op = op_sh then
