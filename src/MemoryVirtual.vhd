@@ -30,16 +30,17 @@ begin
       INITIAL,
       RAM_READ,
       RAM_WRITE,
-      COMPLETE
+      COM_WRITE
       );
 
-    constant NUM_CELLS : integer := 1024;
+    constant NUM_CELLS : integer := 1024*1024;
     type     VirtualMemoryType is array(0 to NUM_CELLS - 1) of Int8;
 
     variable state        : StateType;
     variable mem          : VirtualMemoryType;
     variable addr_int     : integer;
     variable L            : line;
+    variable com          : line;
     variable data_out_tmp : std_logic_vector (31 downto 0);
 
 
@@ -130,15 +131,25 @@ begin
       -- Reset
       load;
       state := INITIAL;
-    elsif rising_edge(clk) then
+    elsif rising_edge(clk) then 
+      if en = '1' then
+        state := INITIAL;
+      end if;
       case state is
         when INITIAL =>
           if en = '0' then
-            addr_int := to_integer(unsigned(addr));
-            if rw = R then
-              state := RAM_READ;
-            else
-              state := RAM_WRITE;
+            if addr(31 downto 20) = x"000" then
+              -- RAM
+              addr_int := to_integer(unsigned(addr));
+              if rw = R then
+                state := RAM_READ;
+              else
+                state := RAM_WRITE;
+              end if;
+            elsif addr = COM_Data_Addr then
+              if rw = W then
+                state := COM_WRITE;
+              end if;
             end if;
           end if;
         when RAM_READ =>
@@ -162,7 +173,7 @@ begin
           end case;
           data_out <= data_out_tmp;
           mem_debug(rw, addr, data_out_tmp, length);
-          state    := COMPLETE;
+          state    := INITIAL;
         when RAM_WRITE =>
           case length is
             when Lword =>
@@ -177,8 +188,17 @@ begin
               mem(addr_int) := data_in(7 downto 0);
           end case;
           mem_debug(rw, addr, data_in, length);
-          state := COMPLETE;
-        when COMPLETE =>
+          state := INITIAL;
+        when COM_WRITE =>
+          if not debug then
+            if data_in(7 downto 0) = x"0a" then
+              writeline(output, com);
+            else
+              write(com, character'val(to_integer(unsigned(data_in(7 downto 0)))));
+            end if;
+          else
+            mem_debug(rw, addr, data_in(7 downto 0), Lbyte);
+          end if;
           state := INITIAL;
       end case;
     end if;
