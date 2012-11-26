@@ -301,6 +301,19 @@ begin
         writeline(output, L);
       end if;
     end procedure;
+    
+    procedure mmu_debug(
+      addr_virt : std_logic_vector(31 downto 0);
+      addr_phys : std_logic_vector(31 downto 0)) is
+    begin
+      if debug then
+        write(L, string'("MMU["));
+        write(L, to_hex_string(addr_virt));
+        write(L, string'("] :  "));
+        write(L, to_hex_string(addr_phys));
+        writeline(output, L);
+      end if;
+    end procedure;
 
     function sign_extend(data_in : std_logic_vector) return Int32 is
     begin
@@ -330,6 +343,7 @@ begin
       case addr(31 downto 28) is
         when x"8" | x"9" | x"A" | x"B" =>
           if mode = Kernel then
+            mmu_debug(addr, "000" & addr(28 downto 0));
             mem_addr <= "000" & addr(28 downto 0);
           else
             -- exception 
