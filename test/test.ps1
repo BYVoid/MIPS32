@@ -62,7 +62,7 @@ vcom -quiet Common.vhd MemoryVirtual.vhd AluOpEncoder.vhd ALU.vhd RegisterFile.v
 
 # estimate the simulation time
 $line = (cat ./memory.dat).count
-$time = $line * 8 * 100 + 200;
+$time = $line * 8000;
 
 # generate script, perform simulation, then delete the script
 echo "run $time ns" "exit -f" | out-file -encoding ascii "$fileout.in"
