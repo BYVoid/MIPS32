@@ -66,7 +66,8 @@ architecture Behavioral of System is
       mem_length   : out LenType;
       mem_addr     : out std_logic_vector (31 downto 0);
       mem_data_in  : out std_logic_vector (31 downto 0);
-      mem_data_out : in  std_logic_vector (31 downto 0));
+      mem_data_out : in  std_logic_vector (31 downto 0)
+    );
   end component;
   component Memory is
     port (
@@ -107,35 +108,45 @@ architecture Behavioral of System is
 
       -- Debug --
       seg7_r_num : out std_logic_vector (3 downto 0)
-      );
+    );
   end component;
   component Seg7 is
     port (
       digit   : in  std_logic_vector (3 downto 0);
       led_out : out std_logic_vector (6 downto 0)
-      );
+    );
   end component;
 
   signal mem_en       : std_logic;
   signal mem_rw       : RwType;
   signal mem_length   : LenType;
-  signal mem_addr     : std_logic_vector (31 downto 0);
-  signal mem_data_in  : std_logic_vector (31 downto 0);
-  signal mem_data_out : std_logic_vector (31 downto 0);
+  signal mem_addr     : Int32;
+  signal mem_data_in  : Int32;
+  signal mem_data_out : Int32;
 
-  signal seg7_r_num : std_logic_vector (3 downto 0);
+  signal seg7_l_num : Int4;
+  signal seg7_r_num : Int4;
 
 begin
+  led <= mem_data_out(15 downto 0);
+  seg7_l_num <= mem_data_in(3 downto 0);
 
   Seg7_1 : Seg7
     port map (
+      digit   => seg7_l_num,
+      led_out => seg7_l
+    );
+
+  Seg7_2 : Seg7
+    port map (
       digit   => seg7_r_num,
-      led_out => seg7_r);
+      led_out => seg7_r
+    );
 
   CPU_1 : CPU
     generic map (
       debug      => false,
-      start_addr => Int32_Zero,
+      start_addr => x"00000000",
       fetch_wait => 4,
       load_wait  => 4,
       store_wait => 4)
@@ -147,11 +158,12 @@ begin
       mem_length   => mem_length,
       mem_addr     => mem_addr,
       mem_data_in  => mem_data_in,
-      mem_data_out => mem_data_out);
+      mem_data_out => mem_data_out
+    );
 
   Memory_1 : Memory
     port map (
-      clk        => clk0,
+      clk        => clk_key,
       rst        => rst,
       en         => mem_en,
       rw         => mem_rw,
@@ -182,6 +194,7 @@ begin
       flash_rp   => flash_rp,
       flash_data => flash_data,
       flash_addr => flash_addr,
-      seg7_r_num => seg7_r_num);
+      seg7_r_num => seg7_r_num
+    );
 
 end Behavioral;

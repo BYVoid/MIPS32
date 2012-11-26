@@ -103,17 +103,6 @@ package Common is
   type sp_func_name_array is array (0 to 63) of string(1 to 7);
   type ri_rt_name_array is array (0 to 1) of string(1 to 4);
 
-  constant opcode_names  : opcode_name_array;
-  constant sp_func_names : sp_func_name_array;
-  constant ri_rt_names   : ri_rt_name_array;
-
-  function boolean_to_std_logic(cond : boolean) return std_logic;
-  function to_hex_string(data_in     : std_logic_vector) return string;
-
-end Common;
-
-package body Common is
-  
   constant opcode_names : opcode_name_array :=
     ("SPECIAL", "REGIMMH", "J      ", "JAL    ",
      "BEQ    ", "BNE    ", "BLEZ   ", "BGTZ   ",
@@ -152,6 +141,13 @@ package body Common is
 
   constant ri_rt_names : ri_rt_name_array :=
     ("BLTZ", "BGEZ");
+
+  function boolean_to_std_logic(cond : boolean) return std_logic;
+  function to_hex_string(data_in     : std_logic_vector) return string;
+
+end Common;
+
+package body Common is
   
   function boolean_to_std_logic(cond : boolean) return std_logic is
   begin
