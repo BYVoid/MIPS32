@@ -1,4 +1,4 @@
-text:
+start:
   .text 0
   lw $2, operand($0)  # r2 := operand
   sra $3, $2, 3       # r3 := r2 >> 3 (arithmetic)

@@ -1,4 +1,4 @@
-text:
+start:
   .text 0
   lw $2, addend_a($0) # r2 := addend_a
   addiu $3, $2, 456   # r3 := r2 + 456
