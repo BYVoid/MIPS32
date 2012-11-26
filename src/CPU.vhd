@@ -119,6 +119,7 @@ begin
     variable fetch_count : WaitCycles := 0;
     variable load_count  : WaitCycles := 0;
     variable store_count : WaitCycles := 0;
+    variable mode        : ModeType   := Kernel;
 
     alias op          : Int6 is instr(31 downto 26);
     alias rs          : Int5 is instr(25 downto 21);
@@ -163,6 +164,16 @@ begin
       end if;
       --sim: finish(0);
     end procedure;
+    
+    procedure bad_addr is
+    begin
+      if debug then
+        write(L, string'("bad address"));
+        writeline(output, L);
+      end if;
+      --sim: finish(0);
+    end procedure;
+    
 
     procedure halt is
     begin
@@ -318,6 +329,19 @@ begin
         writeline(output, L);
       end if;
     end procedure;
+    
+    procedure mmu_debug(
+      addr_virt : std_logic_vector(31 downto 0);
+      addr_phys : std_logic_vector(31 downto 0)) is
+    begin
+      if debug then
+        write(L, string'("MMU["));
+        write(L, to_hex_string(addr_virt));
+        write(L, string'("] :  "));
+        write(L, to_hex_string(addr_phys));
+        writeline(output, L);
+      end if;
+    end procedure;
 
     function sign_extend(data_in : std_logic_vector) return Int32 is
     begin
@@ -341,6 +365,22 @@ begin
       reg_debug(W, reg, data);
     end procedure;
     
+    procedure conv_mem_addr(
+      addr : std_logic_vector (31 downto 0)) is
+    begin
+      case addr(31 downto 28) is
+        when x"8" | x"9" | x"A" | x"B" =>
+          if mode = Kernel then
+            mmu_debug(addr, "000" & addr(28 downto 0));
+            mem_addr <= "000" & addr(28 downto 0);
+          else
+            -- exception 
+          end if;
+        when others =>
+          bad_addr;        
+      end case;
+    end procedure;
+    
   begin
     if rst = '0' then
       --reset
@@ -348,6 +388,16 @@ begin
         write(L, string'("booting"));
         writeline(output, L);
       end if;
+
+      fetch_count := 0;
+      load_count  := 0;
+      store_count := 0;
+      mode        := Kernel;
+
+      mem_en <= '1';
+      mem_rw <= R;
+      reg_rw <= R;
+
       npc   := start_addr;
       state := IF_0;
       
@@ -368,8 +418,7 @@ begin
           mem_en     <= '0';
           mem_rw     <= R;
           mem_length <= Lword;
-          mem_addr   <= pc;
-          led <= pc(15 downto 0);
+          conv_mem_addr(pc);
           state      := IF_1;
         when IF_1 =>
           -- wait until fetching complete
@@ -524,7 +573,7 @@ begin
                   alu_debug(alu_a, alu_b, alu_r);
                   mem_en   <= '0';
                   mem_rw   <= R;
-                  mem_addr <= alu_r;
+                  conv_mem_addr(alu_r);
                   if op = op_lw then
                     mem_length <= Lword;
                   elsif op = op_lh or op = op_lhu then
@@ -570,9 +619,8 @@ begin
                   alu_debug(alu_a, alu_b, alu_r);
                   mem_en      <= '0';
                   mem_rw      <= W;
-                  mem_addr    <= alu_r;
-          led <= alu_r(15 downto 0);
                   mem_data_in <= reg_rdData2;
+                  conv_mem_addr(alu_r);
                   if op = op_sw then
                     mem_length <= Lword;
                   elsif op = op_sh then

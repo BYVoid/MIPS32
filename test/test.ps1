@@ -2,6 +2,8 @@
 # then convert to memory image(.dat) for simulation
 # compare the simulation result to expected result
 
+$startaddr = "0xA0000000"
+
 if ($args.count -ne 1) {
   echo "USAGE: ./test {filename} or ./test -all"
   exit
@@ -33,14 +35,16 @@ $fileout = $filein -replace('\.\w+$', '')
 
 # compile, -EL for little endien, -g for not strip the NOP after branch
 mips-sde-elf-as -EL -mips32 $filein -o "$fileout.o"
-
+# link, -Ttext to set start address for text segment 
+mips-sde-elf-ld -EL -e $startaddr -Ttext $startaddr "$fileout.o" -o "$fileout.out"
 # disassemble
-mips-sde-elf-objdump -EL -S --prefix-addresses --show-raw-insn "$fileout.o" | out-file -encoding ascii "$fileout.sim.code"
+mips-sde-elf-objdump -EL -S --prefix-addresses --show-raw-insn "$fileout.out" | out-file -encoding ascii "$fileout.sim.code"
 
 # convert to .dat format
 cat "$fileout.sim.code" | where{$_ -match '^\w+ <.+> \w+ +.+$'} | %{$_ -replace '^(\w+) <.+> (\w+) +.+$','$1 $2'} | out-file -encoding ascii "$fileout.dat"
 
 rm "$fileout.o"
+rm "$fileout.out"
 
 # simulation use memory.dat under /src directory
 cp "$fileout.dat" ../src/memory.dat
@@ -62,7 +66,7 @@ vcom -quiet Common.vhd MemoryVirtual.vhd AluOpEncoder.vhd ALU.vhd RegisterFile.v
 
 # estimate the simulation time
 $line = (cat ./memory.dat).count
-$time = $line * 8 * 100 + 200;
+$time = $line * 8000;
 
 # generate script, perform simulation, then delete the script
 echo "run $time ns" "exit -f" | out-file -encoding ascii "$fileout.in"

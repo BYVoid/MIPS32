@@ -13,6 +13,7 @@ package Common is
     ALU_EQ, ALU_NE,
     ALU_LT, ALU_LTU,
     ALU_GTZ, ALU_LEZ, ALU_GEZ);
+  type ModeType is (Kernel, User);
 
   subtype WaitCycles is integer range 0 to 15;
 
