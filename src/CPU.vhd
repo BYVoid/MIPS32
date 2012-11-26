@@ -23,7 +23,9 @@ entity CPU is
     mem_length   : out LenType;
     mem_addr     : out std_logic_vector (31 downto 0) := Int32_Zero;
     mem_data_in  : out std_logic_vector (31 downto 0);
-    mem_data_out : in  std_logic_vector (31 downto 0)
+    mem_data_out : in  std_logic_vector (31 downto 0);
+    led    : out std_logic_vector (15 downto 0);
+    seg7_l_num: out Int4
     );
 end CPU;
 
@@ -126,6 +128,32 @@ begin
     alias func        : Int6 is instr(5 downto 0);
     alias instr_index : Int26 is instr(25 downto 0);
     alias imm         : Int16 is instr(15 downto 0);
+
+    procedure print_state(
+      state: in StateType;
+      signal seg7_l_num: out Int4) is
+    begin
+      case state is
+        when HALT =>
+          seg7_l_num <= std_logic_vector(to_signed(0, 4));
+        when IF_0 =>
+          seg7_l_num <= std_logic_vector(to_signed(1, 4));
+        when IF_1 =>
+          seg7_l_num <= std_logic_vector(to_signed(2, 4));
+        when ID_0 =>
+          seg7_l_num <= std_logic_vector(to_signed(3, 4));
+        when EX_0 =>
+          seg7_l_num <= std_logic_vector(to_signed(4, 4));
+        when MEM_0 =>
+          seg7_l_num <= std_logic_vector(to_signed(5, 4));
+        when MEM_1 =>
+          seg7_l_num <= std_logic_vector(to_signed(6, 4));
+        when WB_0 =>
+          seg7_l_num <= std_logic_vector(to_signed(7, 4));
+        when others =>
+          seg7_l_num <= std_logic_vector(to_signed(15, 4));
+      end case;
+    end;
 
     procedure instr_invalid is
     begin
@@ -324,6 +352,7 @@ begin
       state := IF_0;
       
     elsif rising_edge(clk) then
+      print_state(state, seg7_l_num); -- Debug --
       case state is
         when HALT =>
           -- do nothing
@@ -340,6 +369,7 @@ begin
           mem_rw     <= R;
           mem_length <= Lword;
           mem_addr   <= pc;
+          led <= pc(15 downto 0);
           state      := IF_1;
         when IF_1 =>
           -- wait until fetching complete
@@ -349,6 +379,7 @@ begin
           else
             fetch_count := fetch_count + 1;
           end if;
+          led <= mem_data_out(15 downto 0);
         when others =>
           if state = ID_0 then
             -- instruction fetched
@@ -540,6 +571,7 @@ begin
                   mem_en      <= '0';
                   mem_rw      <= W;
                   mem_addr    <= alu_r;
+          led <= alu_r(15 downto 0);
                   mem_data_in <= reg_rdData2;
                   if op = op_sw then
                     mem_length <= Lword;

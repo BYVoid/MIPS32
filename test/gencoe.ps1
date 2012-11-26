@@ -33,6 +33,7 @@ mips-sde-elf-objcopy -O binary "$fileout.out" "$fileout.bin"
 mips-sde-elf-objdump -EL -S --prefix-addresses --show-raw-insn "$fileout.out" | out-file -encoding ascii "$fileout.code"
 # generate coe file
 ./bintocoe "$fileout.bin" "$fileout.coe"
+./bintodata "$fileout.bin" "$fileout.ram1.data" "$fileout.ram2.data"
 
 rm "$fileout.o"
 rm "$fileout.out"

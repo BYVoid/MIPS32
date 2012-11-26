@@ -66,7 +66,9 @@ architecture Behavioral of System is
       mem_length   : out LenType;
       mem_addr     : out std_logic_vector (31 downto 0);
       mem_data_in  : out std_logic_vector (31 downto 0);
-      mem_data_out : in  std_logic_vector (31 downto 0)
+      mem_data_out : in  std_logic_vector (31 downto 0);
+      led    : out std_logic_vector (15 downto 0);
+      seg7_l_num: out Int4
     );
   end component;
   component Memory is
@@ -117,6 +119,7 @@ architecture Behavioral of System is
     );
   end component;
 
+  signal clk: std_logic;
   signal mem_en       : std_logic;
   signal mem_rw       : RwType;
   signal mem_length   : LenType;
@@ -128,8 +131,7 @@ architecture Behavioral of System is
   signal seg7_r_num : Int4;
 
 begin
-  led <= mem_data_out(15 downto 0);
-  seg7_l_num <= mem_data_in(3 downto 0);
+  clk <= clk_key;
 
   Seg7_1 : Seg7
     port map (
@@ -146,24 +148,26 @@ begin
   CPU_1 : CPU
     generic map (
       debug      => false,
-      start_addr => x"00000000",
+      start_addr => x"1FC00000",
       fetch_wait => 4,
       load_wait  => 4,
       store_wait => 4)
     port map (
-      clk          => clk0,
+      clk          => clk,
       rst          => rst,
       mem_en       => mem_en,
       mem_rw       => mem_rw,
       mem_length   => mem_length,
       mem_addr     => mem_addr,
       mem_data_in  => mem_data_in,
-      mem_data_out => mem_data_out
+      mem_data_out => mem_data_out,
+      led => led,
+      seg7_l_num => seg7_l_num
     );
 
   Memory_1 : Memory
     port map (
-      clk        => clk_key,
+      clk        => clk,
       rst        => rst,
       en         => mem_en,
       rw         => mem_rw,

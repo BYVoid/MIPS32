@@ -56,7 +56,6 @@ architecture Behavioral of Memory is
 
   type StateType is (
     INITIAL,
-    ROM_READ,
     RAM_READ,
     RAM_WRITE,
     RAM_WRITE_BYTE_1,
@@ -74,8 +73,6 @@ begin
   case state is
     when INITIAL =>
       seg7_r_num <= std_logic_vector(to_signed(0, 4));
-    when ROM_READ =>
-      seg7_r_num <= std_logic_vector(to_signed(1, 4));
     when RAM_READ =>
       seg7_r_num <= std_logic_vector(to_signed(2, 4));
     when RAM_WRITE =>
