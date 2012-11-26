@@ -3,7 +3,7 @@ start:
   j calc
   j start
 calc:
-  la    $4, 0x1fd003f8
+  la    $4, 0xbfd003f8
   addiu $2, $0, 0x30   # r2 := 0x30
   addiu $3, $0, 8      # r3 := 8
 loop:
