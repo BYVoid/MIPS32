@@ -50,10 +50,12 @@ architecture Behavioral of CPU is
   end component;
   component ALU
     port (
-      aluop    : in  AluOpType;
-      operand1 : in  std_logic_vector(31 downto 0);
-      operand2 : in  std_logic_vector(31 downto 0);
-      result   : out std_logic_vector(31 downto 0));
+      aluop: in AluOpType;
+      operand1: in Int32;
+      operand2: in Int32;
+      result: out Int32;
+      result_ext: out Int32
+    );
   end component;
 
   signal reg_rw      : RwType;
@@ -71,7 +73,7 @@ architecture Behavioral of CPU is
   signal alu_a    : std_logic_vector(31 downto 0) := Int32_Zero;
   signal alu_b    : std_logic_vector(31 downto 0) := Int32_Zero;
   signal alu_r    : std_logic_vector(31 downto 0);
-
+  signal alu_rext : std_logic_vector(31 downto 0);
 
 begin
 
@@ -97,7 +99,9 @@ begin
       aluop    => aluop,
       operand1 => alu_a,
       operand2 => alu_b,
-      result   => alu_r);
+      result   => alu_r,
+      result_ext => alu_rext
+    );
 
   process (clk, rst)
     type StateType is (
