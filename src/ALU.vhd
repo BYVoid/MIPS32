@@ -6,11 +6,12 @@ use work.Common.all;
 entity ALU is
   port (
     -- Interface --
-    aluop    : in  AluOpType;
-    operand1 : in  std_logic_vector(31 downto 0);
-    operand2 : in  std_logic_vector(31 downto 0);
-    result   : out std_logic_vector(31 downto 0)
-    );
+    aluop: in  AluOpType;
+    operand1: in Int32;
+    operand2: in Int32;
+    result: out Int32;
+    result_ext: out Int32
+  );
 end ALU;
 
 architecture Behavioral of ALU is
@@ -19,6 +20,7 @@ begin
     variable op1_s, op2_s   : Signed32;
     variable op1_us, op2_us : Unsigned32;
     variable sham           : integer;
+    variable mul_result     : signed(63 downto 0);
   begin
     op1_s  := signed(operand1);
     op2_s  := signed(operand2);
@@ -42,6 +44,10 @@ begin
         result <= std_logic_vector(op1_us + op2_us);
       when ALU_SUB =>                   -- minus
         result <= std_logic_vector(op1_us - op2_us);
+      when ALU_MUL =>
+        mul_result := op1_s * op2_s;
+        result <= std_logic_vector(mul_result(31 downto 0));
+        result_ext <= std_logic_vector(mul_result(63 downto 32));
 
         -- shift
       when ALU_SRL =>                   -- shift right logic

@@ -8,7 +8,7 @@ package Common is
   type AluOpType is (
     ALU_NOP,
     ALU_AND, ALU_OR, ALU_XOR, ALU_NOR,
-    ALU_ADD, ALU_SUB,
+    ALU_ADD, ALU_SUB, ALU_MUL,
     ALU_SRL, ALU_SRA, ALU_SLL,
     ALU_EQ, ALU_NE,
     ALU_LT, ALU_LTU,
