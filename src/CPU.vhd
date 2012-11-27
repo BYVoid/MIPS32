@@ -419,7 +419,6 @@ begin
             instr  := mem_data_out;
             state  := ID_0;
           end if;
-          led <= mem_data_out(15 downto 0);
         when others =>
           if state = ID_0 then
             decode_debug;
@@ -533,17 +532,11 @@ begin
                   alu_a <= reg_rdData1;
                   if op = op_andi or op = op_ori or op = op_xori then
                     alu_b <= Int16_Zero & imm;
-
-                    led <= x"0000";
                   else
                     alu_b <= sign_extend(imm);
-                    
-                    led <= x"0000";
                   end if;
                   state := WB_0;
                 when WB_0 =>
-                  led <= alu_r(15 downto 0);
-                
                   alu_debug(alu_a, alu_b, alu_r);
                   write_reg(rt, alu_r);
                   state := IF_0;
@@ -606,13 +599,11 @@ begin
                   alu_a <= reg_rdData1;
                   alu_b <= sign_extend(imm);
                   state := MEM_0;
-                  led <= reg_rdData1(15 downto 0);
                 when MEM_0 =>
                   alu_debug(alu_a, alu_b, alu_r);
                   mem_en      <= '0';
                   mem_rw      <= W;
                   mem_data_in <= reg_rdData2;
-                  led <= reg_rdData2(15 downto 0);
                   conv_mem_addr(alu_r);
                   
                   if op = op_sw then
