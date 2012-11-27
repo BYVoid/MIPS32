@@ -158,6 +158,7 @@ begin
         writeline(output, L);
       end if;
       --sim: finish(0);
+      state := IF_0;
     end procedure;
     
     procedure bad_addr is
