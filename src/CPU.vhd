@@ -114,13 +114,16 @@ begin
       MEM_1,                            -- wait for memory operation
       WB_0                              -- Write Back
       );
+    type Cp0RegsType is array(0 to 31) of Int32;
 
     variable state   : StateType;
     variable L       : line;
     variable pc, npc : Int32;
-    variable instr   : Int32;
-    
+    variable instr   : Int32;   
     variable hi, lo  : Int32;
+    variable cp0regs : Cp0RegsType;
+    
+    variable cp0reg_num : integer range 0 to 31;
 
     alias op          : Int6 is instr(31 downto 26);
     alias rs          : Int5 is instr(25 downto 21);
@@ -130,6 +133,19 @@ begin
     alias func        : Int6 is instr(5 downto 0);
     alias instr_index : Int26 is instr(25 downto 0);
     alias imm         : Int16 is instr(15 downto 0);
+    
+    alias Index : Int32 is cp0regs(0);
+    alias EntryLo0 : Int32 is cp0regs(2);
+    alias EntryLo1 : Int32 is cp0regs(3);
+    alias BadVAddr : Int32 is cp0regs(8);
+    alias Count : Int32 is cp0regs(9);
+    alias EntryHi : Int32 is cp0regs(10);
+    alias Compare : Int32 is cp0regs(11);
+    alias SR : Int32 is cp0regs(12);
+    alias Cause : Int32 is cp0regs(13);
+    alias EPC : Int32 is cp0regs(14);
+    alias EBase : Int32 is cp0regs(15);
+    
 
     procedure print_state(
       state: in StateType;
@@ -261,6 +277,53 @@ begin
             write(L, string'("instr_index:"));
             write(L, to_hex_string(instr_index));
             writeline(output, L);
+          when op_cop0 =>
+            if rs = rs_mtc0 or rs = rs_mfc0 then
+              write(L, to_bitvector(op));
+              write(L, string'(" | "));
+              write(L, to_bitvector(rs));
+              write(L, string'(" | "));
+              write(L, to_bitvector(rt));
+              write(L, string'(" | "));
+              write(L, to_bitvector(rd));
+              write(L, string'(" | "));
+              write(L, to_bitvector(instr(10 downto 3)));
+              write(L, string'(" | "));
+              write(L, to_bitvector(instr(2 downto 0)));
+              writeline(output, L);
+              write(L, opcode_names(to_integer(unsigned(op))));
+              write(L, string'("  "));
+              if rs = rs_mtc0 then
+                write(L, string'("mtc0 "));
+              else
+                write(L, string'("mfc0 "));
+              end if;
+              write(L, string'("   "));
+              write(L, string'("rt:"));
+              write(L, to_integer(unsigned(rt)), right, 2);
+              write(L, string'("   "));
+              write(L, cp0regs_names(cp0reg_num));
+              writeline(output, L);
+            elsif rs = rs_co then
+              write(L, to_bitvector(op));
+              write(L, string'(" | "));
+              write(L, to_bit(instr(25)));
+              write(L, string'(" | "));
+              write(L, to_bitvector(instr(24 downto 6)));
+              write(L, string'(" | "));
+              write(L, to_bitvector(func));
+              writeline(output, L);
+              write(L, opcode_names(to_integer(unsigned(op))));
+              write(L, string'(" CO   "));
+              write(L, string'("0"), right, 19);
+              write(L, string'("   "));
+              if func = func_eret then
+                write(L, string'("ERET"));
+              elsif func = func_tlbwi then
+                write(L, string'("TLBWI"));
+              end if;
+              writeline(output, L);              
+            end if;
           when others =>
             write(L, to_bitvector(op));
             write(L, string'(" | "));
@@ -354,6 +417,27 @@ begin
       if debug then
         write(L, string'("R["));
         write(L, hilo);
+        if rw = R then
+          write(L, string'("] :  "));
+        else
+          write(L, string'("] <= "));
+        end if;
+        write(L, to_hex_string(data));
+        write(L, string'(" ("));
+        write(L, to_bitvector(data));
+        write(L, string'(")"));
+        writeline(output, L);
+      end if;
+    end procedure;
+    
+    procedure cp0_debug(
+      rw      : RwType;
+      reg_num : integer range 0 to 31;
+      data    : std_logic_vector(31 downto 0)) is
+    begin
+      if debug then
+        write(L, string'("R["));
+        write(L, cp0regs_names(reg_num));
         if rw = R then
           write(L, string'("] :  "));
         else
@@ -462,6 +546,7 @@ begin
           end if;
         when others =>
           if state = ID_0 then
+            cp0reg_num := to_integer(unsigned(rd));
             decode_debug;
             alu_op   <= op;
             alu_func <= func;
@@ -577,7 +662,7 @@ begin
                   state := WB_0;
                 when WB_0 =>
                   if alu_r(0) = '1' then
-                    npc := std_logic_vector(unsigned(pc) + to_unsigned(4, 32) + unsigned(resize(signed(imm & "00"), 32)));
+                    npc := std_logic_vector(unsigned(pc) + to_unsigned(4, 32) + unsigned(resize((signed(imm) sll 2), 32)));
                   end if;
                   state := IF_0;
                 when others =>
@@ -622,6 +707,36 @@ begin
             when op_lui =>
               write_reg(rt, imm & Int16_Zero);
               state := IF_0;
+            when op_cop0 =>
+              case rs is
+                when rs_mfc0 =>
+                  cp0_debug(R, cp0reg_num, cp0regs(cp0reg_num));
+                  write_reg(rt, cp0regs(cp0reg_num));
+                  state := IF_0;
+                when rs_mtc0 =>
+                  case state is
+                    when ID_0 =>
+                      reg_rdReg2 <= rt;
+                      state      := WB_0;
+                    when WB_0 =>
+                      reg_debug(R, reg_rdReg2, reg_rdData2);
+                      cp0regs(cp0reg_num) := reg_rdData2;
+                      cp0_debug(W, cp0reg_num, cp0regs(cp0reg_num));
+                      state := IF_0;
+                    when others =>
+                      -- impossible
+                  end case;
+                when rs_co =>
+                  if func = func_tlbwi then
+                    state := IF_0;
+                  elsif func = func_eret then
+                    state := IF_0;
+                  else
+                    instr_invalid;
+                  end if;
+                when others =>
+                  instr_invalid;
+              end case;
             when op_lb | op_lh | op_lw | op_lbu | op_lhu =>
               case state is
                 when ID_0 =>
@@ -700,6 +815,9 @@ begin
                 when others =>
                   -- impossible
               end case;
+            when op_cache =>
+              -- NOP
+              state := IF_0;
             when others =>
               instr_invalid;
           end case;

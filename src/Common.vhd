@@ -62,6 +62,7 @@ package Common is
   constant op_ori     : Int6 := "001101";
   constant op_xori    : Int6 := "001110";
   constant op_lui     : Int6 := "001111";
+  constant op_cop0    : Int6 := "010000";
   constant op_lb      : Int6 := "100000";
   constant op_lh      : Int6 := "100001";
   constant op_lw      : Int6 := "100011";
@@ -70,6 +71,7 @@ package Common is
   constant op_sb      : Int6 := "101000";
   constant op_sh      : Int6 := "101001";
   constant op_sw      : Int6 := "101011";
+  constant op_cache   : Int6 := "101111";
 
   -- func
   constant func_sll     : Int6 := "000000";
@@ -95,7 +97,15 @@ package Common is
   constant func_nor     : Int6 := "100111";
   constant func_slt     : Int6 := "101010";
   constant func_sltu    : Int6 := "101011";
+  
+  constant func_tlbwi   : Int6 := "000010";
+  constant func_eret    : Int6 := "011000";
 
+  -- rs
+  constant rs_mfc0 : Int5 := "00000";
+  constant rs_mtc0 : Int5 := "00100";
+  constant rs_co   : Int5 := "10000";
+  
   -- rt
   constant rt_bltz : Int5 := "00000";
   constant rt_bgez : Int5 := "00001";
@@ -103,6 +113,7 @@ package Common is
   type opcode_name_array is array (0 to 63) of string(1 to 7);
   type sp_func_name_array is array (0 to 63) of string(1 to 7);
   type ri_rt_name_array is array (0 to 1) of string(1 to 4);
+  type cp0reg_name_array is array (0 to 15) of string(1 to 8);
 
   constant opcode_names : opcode_name_array :=
     ("SPECIAL", "REGIMMH", "J      ", "JAL    ",
@@ -142,6 +153,14 @@ package Common is
 
   constant ri_rt_names : ri_rt_name_array :=
     ("BLTZ", "BGEZ");
+    
+  constant cp0regs_names : cp0reg_name_array :=
+    ("Index   ", "Random  ", "EntryLo0", "EntryLo1",
+     "Context ", "PageMask", "Wired   ", "HWREna  ",
+     "BadVAddr", "Count   ", "EntryHi ", "Compare ",
+     "SR      ", "Cause   ", "EPC     ", "EBase   ");
+     -- EBase is actually 15.1
+     -- only first 15 regs' names are listed
 
   function boolean_to_std_logic(cond : boolean) return std_logic;
   function to_hex_string(data_in     : std_logic_vector) return string;
