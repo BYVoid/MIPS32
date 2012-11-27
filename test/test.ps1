@@ -34,7 +34,7 @@ if (!(test-path $filein)) {
 $fileout = $filein -replace('\.\w+$', '')
 
 # compile, -EL for little endien, -g for not strip the NOP after branch
-mips-sde-elf-as -EL -mips32 $filein -o "$fileout.o"
+mips-sde-elf-as -EL -g -mips32 $filein -o "$fileout.o"
 # link, -Ttext to set start address for text segment 
 mips-sde-elf-ld -EL -e $startaddr -Ttext $startaddr "$fileout.o" -o "$fileout.out"
 # disassemble
