@@ -5,8 +5,8 @@ start:
   la $s0, 0xbfd003f8
   la $s1, 0xbfd003fc
   
-  li $t0, 12345
-  li $t1, 67890
+  li $t0, 12345678
+  li $t1, 34567890
   mult $t0, $t1
   
   mfhi $a0
