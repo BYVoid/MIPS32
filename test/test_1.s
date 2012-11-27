@@ -1,3 +1,4 @@
+#test of addiu lw and sw
 start:
   .text 0
   lw $2, addend_a($0) # r2 := addend_a

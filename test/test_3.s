@@ -1,3 +1,4 @@
+#jump_branch_com
 start:
   .text 0
   j calc

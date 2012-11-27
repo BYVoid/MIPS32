@@ -1,3 +1,4 @@
+#sra_sllv_srlv_lbu_sb
 start:
   .text 0
   lw $2, operand($0)  # r2 := operand
