@@ -31,6 +31,7 @@ begin
       INITIAL,
       RAM_READ,
       RAM_WRITE,
+      COM_READ,
       COM_WRITE,
       COMPLETE
       );
@@ -154,10 +155,10 @@ begin
               else
                 state := RAM_WRITE;
               end if;
-            elsif addr = COM_Data_Addr then
-              if rw = W then
-                state := COM_WRITE;
-              end if;
+            elsif addr = COM_Data_Addr and rw = W then
+              state := COM_WRITE;
+            elsif addr = COM_Stat_Addr and rw = R then
+              state := COM_READ;
             end if;
           end if;
         when RAM_READ =>
@@ -197,6 +198,11 @@ begin
               mem(addr_int) := data_in(7 downto 0);
           end case;
           mem_debug(rw, addr, data_in, length);
+          completed <= '1';
+          state     := COMPLETE;
+        when COM_READ =>
+          data_out  <= Int24_Zero & x"11";
+          mem_debug(rw, addr, Int24_Zero & x"11", length);
           completed <= '1';
           state     := COMPLETE;
         when COM_WRITE =>
