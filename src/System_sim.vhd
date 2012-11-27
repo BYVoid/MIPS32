@@ -57,7 +57,7 @@ begin
   CPU_1 : CPU
     generic map (
       debug      => true,
-      start_addr => x"A0" & Int24_Zero,
+      start_addr => x"80000000",
       fetch_wait => 1,
       load_wait  => 1,
       store_wait => 1)

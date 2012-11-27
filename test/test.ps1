@@ -2,7 +2,7 @@
 # then convert to memory image(.dat) for simulation
 # compare the simulation result to expected result
 
-$startaddr = "0xA0000000"
+$startaddr = "0x80000000"
 
 if ($args.count -ne 1) {
   echo "USAGE: ./test {filename} or ./test -all"

@@ -196,11 +196,8 @@ begin
           state := INITIAL;
         when COM_WRITE =>
           if not debug then
-            if data_in(7 downto 0) = x"0a" then
-              writeline(output, com);
-            else
-              write(com, character'val(to_integer(unsigned(data_in(7 downto 0)))));
-            end if;
+            write(com, to_hex_string(data_in(7 downto 0)));
+            writeline(output, com);
           else
             mem_debug(rw, addr, data_in(7 downto 0), Lbyte);
           end if;
