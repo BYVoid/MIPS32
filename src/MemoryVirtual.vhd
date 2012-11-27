@@ -10,14 +10,15 @@ entity MemoryVirtual is
     );
   port (
     -- Interface --
-    clk      : in  std_logic;
-    rst      : in  std_logic;
-    en       : in  std_logic;
-    rw       : in  RwType;
-    length   : in  LenType;
-    addr     : in  std_logic_vector (31 downto 0);
-    data_in  : in  std_logic_vector (31 downto 0);
-    data_out : out std_logic_vector (31 downto 0)
+    clk       : in  std_logic;
+    rst       : in  std_logic;
+    en        : in  std_logic;
+    rw        : in  RwType;
+    length    : in  LenType;
+    addr      : in  std_logic_vector (31 downto 0);
+    data_in   : in  std_logic_vector (31 downto 0);
+    data_out  : out std_logic_vector (31 downto 0);
+    completed : out std_logic
     );
 end MemoryVirtual;
 
@@ -30,7 +31,8 @@ begin
       INITIAL,
       RAM_READ,
       RAM_WRITE,
-      COM_WRITE
+      COM_WRITE,
+      COMPLETE
       );
 
     constant NUM_CELLS : integer := 1024*1024;
@@ -83,12 +85,12 @@ begin
         if debug then
           writeline(output, L);
         end if;
-        
+
         word     := std_logic_vector(to_signed(data_var, 32));
         addr     := std_logic_vector(to_signed(addr_var, 32));
         addr     := "000" & addr(28 downto 0);
         addr_var := to_integer(unsigned(addr));
-        
+
         mem(addr_var)   := word(7 downto 0);
         mem(addr_var+1) := word(15 downto 8);
         mem(addr_var+2) := word(23 downto 16);
@@ -136,10 +138,11 @@ begin
       -- Reset
       load;
       state := INITIAL;
-    elsif rising_edge(clk) then 
+    elsif rising_edge(clk) then
       if en = '1' then
         state := INITIAL;
-      end if;
+        completed <= '0';
+      end if;       
       case state is
         when INITIAL =>
           if en = '0' then
@@ -176,9 +179,10 @@ begin
               data_out_tmp(23 downto 16) := Int8_Zero;
               data_out_tmp(31 downto 24) := Int8_Zero;
           end case;
-          data_out <= data_out_tmp;
+          data_out  <= data_out_tmp;
           mem_debug(rw, addr, data_out_tmp, length);
-          state    := INITIAL;
+          completed <= '1';
+          state     := COMPLETE;
         when RAM_WRITE =>
           case length is
             when Lword =>
@@ -193,7 +197,8 @@ begin
               mem(addr_int) := data_in(7 downto 0);
           end case;
           mem_debug(rw, addr, data_in, length);
-          state := INITIAL;
+          completed <= '1';
+          state     := COMPLETE;
         when COM_WRITE =>
           if not debug then
             write(com, to_hex_string(data_in(7 downto 0)));
@@ -201,7 +206,9 @@ begin
           else
             mem_debug(rw, addr, data_in(7 downto 0), Lbyte);
           end if;
-          state := INITIAL;
+          completed <= '1';
+          state     := COMPLETE;
+        when COMPLETE =>
       end case;
     end if;
   end process;

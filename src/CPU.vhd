@@ -8,22 +8,21 @@ use work.Common.all;
 entity CPU is
   generic (
     debug      : boolean;
-    start_addr : std_logic_vector (31 downto 0);
-    fetch_wait : WaitCycles;
-    load_wait  : WaitCycles;
-    store_wait : WaitCycles
+    start_addr : std_logic_vector (31 downto 0)
     );
   port (
     clk : in std_logic;
     rst : in std_logic;
 
     -- RAM
-    mem_en       : out std_logic                      := '1';
-    mem_rw       : out RwType;
-    mem_length   : out LenType;
-    mem_addr     : out std_logic_vector (31 downto 0) := Int32_Zero;
-    mem_data_in  : out std_logic_vector (31 downto 0);
-    mem_data_out : in  std_logic_vector (31 downto 0);
+    mem_en        : out std_logic                      := '1';
+    mem_rw        : out RwType;
+    mem_length    : out LenType;
+    mem_addr      : out std_logic_vector (31 downto 0) := Int32_Zero;
+    mem_data_in   : out std_logic_vector (31 downto 0);
+    mem_data_out  : in  std_logic_vector (31 downto 0);
+    mem_completed : in  std_logic;
+    
     led    : out std_logic_vector (15 downto 0);
     seg7_l_num: out Int4
     );
@@ -112,14 +111,10 @@ begin
       WB_0                              -- Write Back
       );
 
-    variable state       : StateType;
-    variable L           : line;
-    variable pc, npc     : Int32;
-    variable instr       : Int32;
-    variable fetch_count : WaitCycles := 0;
-    variable load_count  : WaitCycles := 0;
-    variable store_count : WaitCycles := 0;
-    variable mode        : ModeType   := Kernel;
+    variable state   : StateType;
+    variable L       : line;
+    variable pc, npc : Int32;
+    variable instr   : Int32;
 
     alias op          : Int6 is instr(31 downto 26);
     alias rs          : Int5 is instr(25 downto 21);
@@ -370,12 +365,12 @@ begin
     begin
       case addr(31 downto 28) is
         when x"8" | x"9" | x"A" | x"B" =>
-          if mode = Kernel then
+          --if mode = Kernel then
             mmu_debug(addr, "000" & addr(28 downto 0));
             mem_addr <= "000" & addr(28 downto 0);
-          else
+          --else
             -- exception 
-          end if;
+          --end if;
         when others =>
           bad_addr;        
       end case;
@@ -388,11 +383,6 @@ begin
         write(L, string'("booting"));
         writeline(output, L);
       end if;
-
-      fetch_count := 0;
-      load_count  := 0;
-      store_count := 0;
-      mode        := Kernel;
 
       mem_en <= '1';
       mem_rw <= R;
@@ -419,17 +409,14 @@ begin
           mem_rw     <= R;
           mem_length <= Lword;
           conv_mem_addr(pc);
-          state      := IF_1;
+          state := IF_1;
         when IF_1 =>
           -- wait until fetching complete
-          if fetch_count = fetch_wait + 1 then
+          if mem_completed = '1' then
             -- instruction fetched
-            mem_en   <= '1';
-            instr    := mem_data_out;
-            fetch_count := 0;
-            state       := ID_0;
-          else
-            fetch_count := fetch_count + 1;
+            mem_en <= '1';
+            instr  := mem_data_out;
+            state  := ID_0;
           end if;
           led <= mem_data_out(15 downto 0);
         when others =>
@@ -590,14 +577,11 @@ begin
                   state := MEM_1;
                 when MEM_1 =>
                   -- wait until loading complete
-                  if load_count = load_wait then
-                    load_count := 0;
-                    state      := WB_0;
-                  else
-                    load_count := load_count + 1;
+                  if mem_completed = '1' then
+                    mem_en <= '1';
+                    state  := WB_0;
                   end if;
                 when WB_0 =>
-                  mem_en <= '1';
                   if op = op_lb then
                     write_reg(rt, sign_extend(mem_data_out(7 downto 0)));
                   elsif op = op_lh then
@@ -640,13 +624,10 @@ begin
                   state := MEM_1;
                 when MEM_1 =>
                   -- wait until storing complete
-                  if store_count = store_wait + 1 then
-                    mem_en      <= '1';
-                    mem_rw      <= R;
-                    store_count := 0;
-                    state       := IF_0;
-                  else
-                    store_count := store_count + 1;
+                  if mem_completed = '1' then
+                    mem_en <= '1';
+                    mem_rw <= R;
+                    state  := IF_0;
                   end if;
                 when others =>
                   -- impossible
