@@ -148,10 +148,10 @@ begin
   CPU_1 : CPU
     generic map (
       debug      => false,
-      start_addr => x"1FC00000",
-      fetch_wait => 4,
-      load_wait  => 4,
-      store_wait => 4)
+      start_addr => x"80000000",
+      fetch_wait => 2,
+      load_wait  => 2,
+      store_wait => 1)
     port map (
       clk          => clk,
       rst          => rst,
