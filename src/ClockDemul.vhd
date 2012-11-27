@@ -21,12 +21,16 @@ begin
       counter := 0;
       clk_out <= '0';
     elsif rising_edge(clk_in) then
-      counter := counter + 1;
-      if counter = divisor / 2 then
-        clk_out <= '1';
-      elsif counter = divisor then
-        clk_out <= '0';
-        counter := 0;
+      if divisor = 1 then
+        clk_out <= clk_in;
+      else
+        counter := counter + 1;
+        if counter = divisor / 2 then
+          clk_out <= '1';
+        elsif counter = divisor then
+          clk_out <= '0';
+          counter := 0;
+        end if;
       end if;
     end if;
   end process;

@@ -118,6 +118,14 @@ architecture Behavioral of System is
       led_out : out std_logic_vector (6 downto 0)
     );
   end component;
+  component ClockDemul is
+    port (
+      clk_in:       in      std_logic;
+      rst:          in      std_logic;
+      divisor:      in      integer;
+      clk_out:      out     std_logic
+    );
+  end component;
 
   signal clk: std_logic;
   signal mem_en       : std_logic;
@@ -129,9 +137,19 @@ architecture Behavioral of System is
 
   signal seg7_l_num : Int4;
   signal seg7_r_num : Int4;
-
+  
+  constant clk0_freq: integer := 11059200;
+  constant clk1_freq: integer := 50000000;
+  constant actual_freq: integer := 1000;
 begin
-  clk <= clk_key;
+  --clk <= clk_key;
+  
+  demultiplied_clock: ClockDemul port map (
+    clk_in => clk1,
+    rst => rst,
+    divisor => clk1_freq / actual_freq,
+    clk_out => clk
+  );
 
   Seg7_1 : Seg7
     port map (
