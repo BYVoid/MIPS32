@@ -5,6 +5,7 @@ if (test-path *.out) {rm -force *.out}
 if (test-path *.code) {rm -force *.code}
 if (test-path *.bin) {rm -force *.bin}
 if (test-path *.coe) {rm -force *.coe}
+if (test-path *.data) {rm -force *.data}
 if (test-path *.dat) {rm -force *.dat}
 if (test-path *.result) {rm -force *.result}
 cd ../src

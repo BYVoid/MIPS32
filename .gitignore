@@ -51,6 +51,7 @@ test/*.out
 test/*.code
 test/*.bin
 test/*.coe
+test/*.data
 test/*.dat
 test/*.result
 test/*.exe
