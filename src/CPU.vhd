@@ -119,6 +119,8 @@ begin
     variable L       : line;
     variable pc, npc : Int32;
     variable instr   : Int32;
+    
+    variable hi, lo  : Int32;
 
     alias op          : Int6 is instr(31 downto 26);
     alias rs          : Int5 is instr(25 downto 21);
@@ -309,6 +311,20 @@ begin
       end if;
     end procedure;
     
+    procedure alu_debug(
+      alu_a, alu_b, alu_r, alu_rext : std_logic_vector(31 downto 0)) is
+    begin
+      if debug then
+        alu_debug(alu_a, alu_b, alu_r);
+        write(L, string'("alu_re:  "));
+        write(L, to_hex_string(alu_rext));
+        write(L, string'(" ("));
+        write(L, to_bitvector(alu_rext));
+        write(L, string'(")"));
+        writeline(output, L);
+      end if;
+    end procedure;
+    
     procedure reg_debug(
       rw   : RwType;
       reg  : std_logic_vector(4 downto 0);
@@ -317,6 +333,27 @@ begin
       if debug then
         write(L, string'("R["));
         write(L, to_integer(unsigned(reg)), right, 2);
+        if rw = R then
+          write(L, string'("] :  "));
+        else
+          write(L, string'("] <= "));
+        end if;
+        write(L, to_hex_string(data));
+        write(L, string'(" ("));
+        write(L, to_bitvector(data));
+        write(L, string'(")"));
+        writeline(output, L);
+      end if;
+    end procedure;
+    
+    procedure hilo_debug(
+      rw   : RwType;
+      hilo : string;
+      data : std_logic_vector(31 downto 0)) is
+    begin
+      if debug then
+        write(L, string'("R["));
+        write(L, hilo);
         if rw = R then
           write(L, string'("] :  "));
         else
@@ -452,9 +489,36 @@ begin
                     when others =>
                       -- impossible
                   end case;
+                when func_mfhi =>
+                  hilo_debug(R, "hi", hi);
+                  write_reg(rd, hi);
+                  state := IF_0;
+                when func_mflo =>
+                  hilo_debug(R, "lo", lo);
+                  write_reg(rd, lo);
+                  state := IF_0;
+                when func_mthi | func_mtlo =>
+                  case state is
+                    when ID_0 =>
+                      reg_rdReg1 <= rs;
+                      state      := WB_0;
+                    when WB_0 =>
+                      reg_debug(R, reg_rdReg1, reg_rdData1);
+                      if func = func_mthi then
+                        hi := reg_rdData1;
+                        hilo_debug(W, "hi", hi);
+                      else
+                        lo := reg_rdData1;
+                        hilo_debug(W, "lo", lo);
+                      end if;
+                      state := IF_0;
+                    when others =>
+                      -- impossible
+                  end case;
                 when func_sll | func_srl | func_sra |
                   func_sllv | func_srlv | func_srav |
                   func_addu | func_subu |
+                  func_mult | func_multu |
                   func_and | func_or | func_xor | func_nor |
                   func_slt | func_sltu =>
                   case state is
@@ -477,8 +541,16 @@ begin
                       alu_b <= reg_rdData2;
                       state := WB_0;
                     when WB_0 =>
-                      alu_debug(alu_a, alu_b, alu_r);
-                      write_reg(rd, alu_r);
+                      if func = func_mult or func = func_multu then
+                        alu_debug(alu_a, alu_b, alu_r, alu_rext);
+                        hi := alu_rext;
+                        lo := alu_r;
+                        hilo_debug(W, "hi", hi);
+                        hilo_debug(W, "lo", lo);
+                      else
+                        alu_debug(alu_a, alu_b, alu_r);
+                        write_reg(rd, alu_r);
+                      end if;
                       state := IF_0;
                     when others =>
                       -- impossible;

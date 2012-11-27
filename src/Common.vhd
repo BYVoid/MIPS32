@@ -8,7 +8,7 @@ package Common is
   type AluOpType is (
     ALU_NOP,
     ALU_AND, ALU_OR, ALU_XOR, ALU_NOR,
-    ALU_ADD, ALU_SUB, ALU_MUL,
+    ALU_ADD, ALU_SUB, ALU_MUL, ALU_MULU,
     ALU_SRL, ALU_SRA, ALU_SLL,
     ALU_EQ, ALU_NE,
     ALU_LT, ALU_LTU,
@@ -84,7 +84,7 @@ package Common is
   constant func_mfhi    : Int6 := "010000";
   constant func_mthi    : Int6 := "010001";
   constant func_mflo    : Int6 := "010010";
-  constant func_mtlo    : Int6 := "010100";
+  constant func_mtlo    : Int6 := "010011";
   constant func_mult    : Int6 := "011000";
   constant func_multu   : Int6 := "011001";
   constant func_addu    : Int6 := "100001";

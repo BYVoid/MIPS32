@@ -23,6 +23,8 @@ begin
     ALU_SLL when func_sllv,
     ALU_SRL when func_srlv,
     ALU_SRA when func_srav,
+    ALU_MUL when func_mult,
+    ALU_MULU when func_multu,
     ALU_ADD when func_addu,
     ALU_SUB when func_subu,
     ALU_AND when func_and,

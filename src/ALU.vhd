@@ -21,6 +21,7 @@ begin
     variable op1_us, op2_us : Unsigned32;
     variable sham           : integer;
     variable mul_result     : signed(63 downto 0);
+    variable mulu_result    : unsigned(63 downto 0);
   begin
     op1_s  := signed(operand1);
     op2_s  := signed(operand2);
@@ -48,6 +49,10 @@ begin
         mul_result := op1_s * op2_s;
         result <= std_logic_vector(mul_result(31 downto 0));
         result_ext <= std_logic_vector(mul_result(63 downto 32));
+      when ALU_MULU =>
+        mulu_result := op1_us * op2_us;
+        result <= std_logic_vector(mulu_result(31 downto 0));
+        result_ext <= std_logic_vector(mulu_result(63 downto 32));
 
         -- shift
       when ALU_SRL =>                   -- shift right logic
