@@ -14,6 +14,7 @@ entity Memory is
     addr:         in      Int32;
     data_in:      in      Int32;
     data_out:     out     Int32;
+    completed:    out     std_logic;
     
     -- Import --
     ram1_en:      out     std_logic;
@@ -56,6 +57,7 @@ architecture Behavioral of Memory is
 
   type StateType is (
     INITIAL,
+    STOPPED,
     RAM_READ,
     RAM_WRITE,
     RAM_WRITE_BYTE_1,
@@ -73,6 +75,8 @@ begin
   case state is
     when INITIAL =>
       seg7_r_num <= std_logic_vector(to_signed(0, 4));
+    when STOPPED =>
+      seg7_r_num <= std_logic_vector(to_signed(1, 4));
     when RAM_READ =>
       seg7_r_num <= std_logic_vector(to_signed(2, 4));
     when RAM_WRITE =>
@@ -96,9 +100,17 @@ end;
 
 procedure rom_read(
   signal data_out: out Int32;
-  signal rom_data: in Int32) is
+  signal rom_data: in Int32;
+  signal state: inout StateType;
+  signal completed: out std_logic) is
 begin
-  data_out <= rom_data;
+  case state is
+    when INITIAL =>
+      data_out <= rom_data;
+      completed <= '1';
+      state <= STOPPED;
+    when others =>
+  end case;
 end;
 
 procedure ram_read(
@@ -113,7 +125,8 @@ procedure ram_read(
   signal ram2_oe: out std_logic;
   signal ram2_rw: out std_logic;
   signal ram2_data: inout Int16;
-  signal state: inout StateType) is
+  signal state: inout StateType;
+  signal completed: out std_logic) is
 begin
   case state is
     when INITIAL =>
@@ -153,7 +166,8 @@ begin
           end if;
         end if;
       end if;
-      state <= INITIAL;
+      completed <= '1';
+      state <= STOPPED;
     when others =>
   end case;
 end;
@@ -171,7 +185,8 @@ procedure ram_write(
   signal ram2_rw: out std_logic;
   signal ram2_data: inout Int16;
   signal data_byte_temp: inout Int16;
-  signal state: inout StateType) is
+  signal state: inout StateType;
+  signal completed: out std_logic) is
 begin
   case state is
     when INITIAL =>
@@ -209,7 +224,8 @@ begin
     when RAM_WRITE =>
       ram1_rw <= '1';
       ram2_rw <= '1';
-      state <= INITIAL;
+      completed <= '1';
+      state <= STOPPED;
     when RAM_WRITE_BYTE_1 =>
       if addr(1) = '0' then
         data_byte_temp <= ram1_data;
@@ -248,11 +264,19 @@ procedure com_status(
   signal com_ready: in std_logic;
   signal com_tbre: in std_logic;
   signal com_tsre: in std_logic;
-  signal data_out: out Int32) is
+  signal data_out: out Int32;
+  signal state: inout StateType;
+  signal completed: out std_logic) is
 begin
-  data_out(0) <= com_ready;
-  data_out(1) <= com_tbre and com_tsre;
-  data_out(31 downto 2) <= Int30_Zero;
+  case state is
+    when INITIAL =>
+      data_out(0) <= com_tbre and com_tsre;
+      data_out(1) <= com_ready;
+      data_out(31 downto 2) <= Int30_Zero;
+      completed <= '1';
+      state <= STOPPED;
+    when others =>
+  end case;
 end;
 
 procedure com_read(
@@ -262,7 +286,8 @@ procedure com_read(
   signal ram1_oe: out std_logic;
   signal com_data: inout Int8;
   signal data_out: out Int32;
-  signal state: inout StateType) is
+  signal state: inout StateType;
+  signal completed: out std_logic) is
 begin
   case state is
     when INITIAL =>
@@ -275,7 +300,8 @@ begin
       com_rdn <= '1';
       data_out(7 downto 0) <= com_data;
       data_out(31 downto 8) <= Int24_Zero;
-      state <= INITIAL;
+      completed <= '1';
+      state <= STOPPED;
     when others =>
   end case;
 end;
@@ -288,7 +314,8 @@ procedure com_write(
   signal ram1_en: out std_logic;
   signal ram1_oe: out std_logic;
   signal com_data: inout Int8;
-  signal state: inout StateType) is
+  signal state: inout StateType;
+  signal completed: out std_logic) is
 begin
   case state is
     when INITIAL =>
@@ -299,7 +326,8 @@ begin
       state <= COM_WRITE;
     when COM_WRITE =>
       com_wrn <= '1';
-      state <= INITIAL;
+      completed <= '1';
+      state <= STOPPED;
     when others =>
   end case;
 end;
@@ -310,7 +338,8 @@ procedure flash_read(
   signal flash_oe: out std_logic;
   signal flash_we: out std_logic;
   signal flash_data: inout Int16;
-  signal state: inout StateType) is
+  signal state: inout StateType;
+  signal completed: out std_logic) is
 begin
   case state is
     when INITIAL =>
@@ -321,7 +350,8 @@ begin
     when FLASH_READ =>
       data_out(15 downto 0) <= flash_data;
       data_out(31 downto 16) <= Int16_Zero;
-      state <= INITIAL;
+      completed <= '1';
+      state <= STOPPED;
     when others =>
   end case;
 end;
@@ -332,7 +362,8 @@ procedure flash_write(
   signal flash_oe: out std_logic;
   signal flash_we: out std_logic;
   signal flash_data: inout Int16;
-  signal state: inout StateType) is
+  signal state: inout StateType;
+  signal completed: out std_logic) is
 begin
   case state is
     when INITIAL =>
@@ -342,7 +373,8 @@ begin
       state <= FLASH_WRITE;
     when FLASH_WRITE =>
       flash_we <= '1';
-      state <= INITIAL;
+      completed <= '1';
+      state <= STOPPED;
     when others =>
   end case;
 end;
@@ -381,44 +413,46 @@ begin
       ram2_rw <= '1';
       com_rdn <= '1';
       com_wrn <= '1';
-      state <= INITIAL;
+      completed <= '0';
+      state <= STOPPED;
     elsif rising_edge(clk) then
       print_state(state, seg7_r_num); -- Debug --
       if en = '1' then
         state <= INITIAL;
+        completed <= '0';
       else
         if addr(31 downto 20) = x"000" then
           --- SRAM ---
           if rw = R then
             ram_read(length, addr, data_out, ram1_en, ram1_oe, ram1_rw, ram1_data,
-              ram2_en, ram2_oe, ram2_rw, ram2_data, state);
+              ram2_en, ram2_oe, ram2_rw, ram2_data, state, completed);
           else
             ram_write(length, addr, data_in, ram1_en, ram1_oe, ram1_rw, ram1_data,
-              ram2_en, ram2_oe, ram2_rw, ram2_data, data_byte_temp, state);
+              ram2_en, ram2_oe, ram2_rw, ram2_data, data_byte_temp, state, completed);
           end if;
         elsif addr(31 downto 12) = x"1FC00" then
           -- ROM --
           if rw = R then
-            rom_read(data_out, rom_data);
+            rom_read(data_out, rom_data, state, completed);
           end if;
         elsif addr = COM_Data_Addr then
           -- COM --
           if rw = R then
-            com_read(com_ready, com_rdn, ram1_en, ram1_oe, ram1_data(7 downto 0), data_out, state);
+            com_read(com_ready, com_rdn, ram1_en, ram1_oe, ram1_data(7 downto 0), data_out, state, completed);
           else
-            com_write(com_tbre, com_tsre, data_in, com_wrn, ram1_en, ram1_oe, ram1_data(7 downto 0), state);
+            com_write(com_tbre, com_tsre, data_in, com_wrn, ram1_en, ram1_oe, ram1_data(7 downto 0), state, completed);
           end if;
         elsif addr = COM_Stat_Addr then
           -- COM Status --
           if rw = R then
-            com_status(com_ready, com_tbre, com_tsre, data_out);
+            com_status(com_ready, com_tbre, com_tsre, data_out, state, completed);
           end if;
         elsif addr(31 downto 24) = x"1E" then
           --- Flash ---
           if rw = R then
-            flash_read(addr, data_out, flash_oe, flash_we, flash_data, state);
+            flash_read(addr, data_out, flash_oe, flash_we, flash_data, state, completed);
           else
-            flash_write(addr, data_in, flash_oe, flash_we, flash_data, state);
+            flash_write(addr, data_in, flash_oe, flash_we, flash_data, state, completed);
           end if;
         end if;
       end if; -- en

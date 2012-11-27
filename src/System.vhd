@@ -52,10 +52,7 @@ architecture Behavioral of System is
   component CPU
     generic (
       debug      : boolean;
-      start_addr : std_logic_vector (31 downto 0);
-      fetch_wait : WaitCycles;
-      load_wait  : WaitCycles;
-      store_wait : WaitCycles);
+      start_addr : std_logic_vector (31 downto 0));
     port (
       clk : in std_logic;
       rst : in std_logic;
@@ -67,6 +64,7 @@ architecture Behavioral of System is
       mem_addr     : out std_logic_vector (31 downto 0);
       mem_data_in  : out std_logic_vector (31 downto 0);
       mem_data_out : in  std_logic_vector (31 downto 0);
+      mem_completed : in  std_logic;
       led    : out std_logic_vector (15 downto 0);
       seg7_l_num: out Int4
     );
@@ -82,6 +80,7 @@ architecture Behavioral of System is
       addr     : in  std_logic_vector (31 downto 0);
       data_in  : in  std_logic_vector (31 downto 0);
       data_out : out std_logic_vector (31 downto 0);
+      completed: out std_logic;
 
       -- Import --
       ram1_en    : out   std_logic;
@@ -134,22 +133,17 @@ architecture Behavioral of System is
   signal mem_addr     : Int32;
   signal mem_data_in  : Int32;
   signal mem_data_out : Int32;
+  signal mem_completed: std_logic;
 
   signal seg7_l_num : Int4;
   signal seg7_r_num : Int4;
   
   constant clk0_freq: integer := 11059200;
   constant clk1_freq: integer := 50000000;
-  constant actual_freq: integer := 1000;
 begin
   --clk <= clk_key;
-  
-  demultiplied_clock: ClockDemul port map (
-    clk_in => clk1,
-    rst => rst,
-    divisor => clk1_freq / actual_freq,
-    clk_out => clk
-  );
+  --clk <= clk1;
+  demultiplied_clock: ClockDemul port map (clk1, rst, 2, clk);
 
   Seg7_1 : Seg7
     port map (
@@ -166,10 +160,8 @@ begin
   CPU_1 : CPU
     generic map (
       debug      => false,
-      start_addr => x"80000000",
-      fetch_wait => 2,
-      load_wait  => 2,
-      store_wait => 1)
+      start_addr => x"80000000"
+    )
     port map (
       clk          => clk,
       rst          => rst,
@@ -179,6 +171,7 @@ begin
       mem_addr     => mem_addr,
       mem_data_in  => mem_data_in,
       mem_data_out => mem_data_out,
+      mem_completed => mem_completed,
       led => led,
       seg7_l_num => seg7_l_num
     );
@@ -193,6 +186,7 @@ begin
       addr       => mem_addr,
       data_in    => mem_data_in,
       data_out   => mem_data_out,
+      completed  => mem_completed,
       ram1_en    => ram1_en,
       ram1_oe    => ram1_oe,
       ram1_rw    => ram1_rw,
