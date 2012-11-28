@@ -11,7 +11,7 @@ start:
   addiu $2, $0, 1     # r2 := 1  
   sb $3, shamt($2)    # shamt(15 downto 8) := r3
   lw $2, shamt($0)    # r2 := shamt
-  syscall
+  break
 operand:
   .word 0xAA001005
 shamt:

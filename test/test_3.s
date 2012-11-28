@@ -21,7 +21,7 @@ loop:
   subu  $3, $3, $2     # r3 := r3 - r2 
   bgez  $3, loop       # if r3 >= 0 then goto loop
 
-  syscall
+  break
 
 write_com:
   li $t1, 1

@@ -26,7 +26,7 @@ start:
   jal wrtie_word_com
   nop
   
-  syscall
+  break
 
 wrtie_word_com:
   move $t7, $ra

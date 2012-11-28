@@ -33,18 +33,43 @@ if (!(test-path $filein)) {
 # extract out the file extension
 $fileout = $filein -replace('\.\w+$', '')
 
-# compile, -EL for little endien, -g for not strip the NOP after branch
-mips-sde-elf-as -EL -g -mips32 $filein -o "$fileout.o"
-# link, -Ttext to set start address for text segment 
-mips-sde-elf-ld -EL -e $startaddr -Ttext $startaddr "$fileout.o" -o "$fileout.out"
-# disassemble
-mips-sde-elf-objdump -EL -S --prefix-addresses --show-raw-insn "$fileout.out" | out-file -encoding ascii "$fileout.sim.code"
+select-string '^# ?ex_handler ?@ ?(\w+) ?$' -Path $filein | 
+%{$ex = $_.matches.count
+  $exline = $_.linenumber
+  $exstartaddr = $_.matches[0].groups[1].value
+}
+
+if ($ex -ne 1) {
+  # compile, -EL for little endien, -g for not strip the NOP after branch
+  mips-sde-elf-as -EL -g -mips32 $filein -o "$fileout.o"
+  # link, -Ttext to set start address for text segment 
+  mips-sde-elf-ld -EL -e $startaddr -Ttext $startaddr "$fileout.o" -o "$fileout.out"
+  # disassemble
+  mips-sde-elf-objdump -EL -S --prefix-addresses --show-raw-insn "$fileout.out" | out-file -encoding ascii "$fileout.sim.code"
+  
+  rm "$fileout.o"
+  rm "$fileout.out"
+} else {
+  $line = (cat $filein).count
+  (cat $filein)[0..($exline-2)] | out-file -encoding ascii "$fileout.1.s"
+  (cat $filein)[$exline..($line-1)] | out-file -encoding ascii "$fileout.2.s"
+  mips-sde-elf-as -EL -g -mips32 "$fileout.1.s" -o "$fileout.1.o"
+  mips-sde-elf-as -EL -g -mips32 "$fileout.2.s" -o "$fileout.2.o"
+  mips-sde-elf-ld -EL -e $startaddr -Ttext $startaddr "$fileout.1.o" -o "$fileout.1.out"
+  mips-sde-elf-ld -EL -e $startaddr -Ttext $exstartaddr "$fileout.2.o" -o "$fileout.2.out"
+  mips-sde-elf-objdump -EL -S --prefix-addresses --show-raw-insn "$fileout.1.out" | out-file -encoding ascii "$fileout.sim.code"
+  mips-sde-elf-objdump -EL -S --prefix-addresses --show-raw-insn "$fileout.2.out" | out-file -encoding ascii "$fileout.sim.code" -append
+  
+  rm "$fileout.1.s"
+  rm "$fileout.1.o"
+  rm "$fileout.1.out"
+  rm "$fileout.2.s"
+  rm "$fileout.2.o"
+  rm "$fileout.2.out" 
+}
 
 # convert to .dat format
 cat "$fileout.sim.code" | where{$_ -match '^\w+ <.+> \w+ +.+$'} | %{$_ -replace '^(\w+) <.+> (\w+) +.+$','$1 $2'} | out-file -encoding ascii "$fileout.dat"
-
-rm "$fileout.o"
-rm "$fileout.out"
 
 # simulation use memory.dat under /src directory
 cp "$fileout.dat" ../src/memory.dat
@@ -62,7 +87,7 @@ if (test-path work) {rm -force -recurse work}
 vlib work
 
 # generate CPU_sim.vhd
-cat CPU.vhd | %{$_ -replace ('--sim: ', '')} |out-file -encoding ascii CPU_sim.vhd
+cat CPU.vhd | %{$_ -replace ('--sim: ', '')} | out-file -encoding ascii CPU_sim.vhd
 # compile VHDL quietly
 vcom -quiet Common.vhd MemoryVirtual.vhd AluOpEncoder.vhd ALU.vhd RegisterFile.vhd CPU_sim.vhd System_sim.vhd
 

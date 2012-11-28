@@ -13,7 +13,7 @@ start:
   li $a0, 0x25
   jal write_com
   nop
-  syscall
+  break
 
 write_com:
   li $t1, 1
