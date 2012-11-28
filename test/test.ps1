@@ -48,6 +48,8 @@ rm "$fileout.out"
 
 # simulation use memory.dat under /src directory
 cp "$fileout.dat" ../src/memory.dat
+cp bootloader.hex ../src/rom.hex
+cp ucore.hex ../src/flash.hex
 
 cd ../src
 
@@ -79,6 +81,8 @@ if (test-path transcript) {rm -force transcript}
 if (test-path *wlf*) {rm -force *wlf*}
 if (test-path work) {rm -force -recurse work}
 if (test-path memory.dat) {rm -force memory.dat}
+if (test-path rom.hex) {rm -force rom.hex}
+if (test-path flash.hex) {rm -force flash.hex}
 
 cd ../test
 

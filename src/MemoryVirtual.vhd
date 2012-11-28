@@ -24,31 +24,69 @@ end MemoryVirtual;
 
 architecture Behavioral of MemoryVirtual is
 begin
-
   process(clk, rst)
     
     type StateType is (
       INITIAL,
+      ROM_READ,
       RAM_READ,
       RAM_WRITE,
       COM_READ,
       COM_WRITE,
       FLASH_READ,
       COMPLETE
-      );
+    );
 
-    constant NUM_CELLS : integer := 1024*1024;
-    type     VirtualMemoryType is array(0 to NUM_CELLS - 1) of Int8;
+    constant NUM_RAM_CELLS : integer := 1024*1024;
+    constant NUM_ROM_CELLS: integer := 1024;
+    constant NUM_FLASH_CELLS: integer := 400000;
+    type     VirtualMemoryType is array(0 to NUM_RAM_CELLS - 1) of Int8;
+    type     VirtualRomType is array(0 to NUM_ROM_CELLS - 1) of Int32;
+    type     VirtualFlashType is array(0 to NUM_FLASH_CELLS - 1) of Int16;
 
     variable state        : StateType;
     variable mem          : VirtualMemoryType;
+    variable rom          : VirtualRomType;
+    variable flash        : VirtualFlashType;
     variable addr_int     : integer;
     variable L            : line;
     variable com          : line;
     variable data_out_tmp : std_logic_vector (31 downto 0);
 
+    procedure load_rom is
+      file mem_file     : text open read_mode is "rom.hex";
+      variable data_var : integer;
+      variable index    : integer;
+      variable i        : integer;
+      variable word     : Int32;
+    begin
+      if debug then
+        write(L, string'("loading ROM"));
+        writeline(output, L);
+      end if;
+      
+      index := 0;
+      while not endfile(mem_file) loop
+        readline(mem_file, L);
 
-    procedure load is
+        data_var := 0;
+        for i in 1 to 8 loop
+          if ('0' <= L(i) and L(i) <= '9') then
+            data_var := data_var*16
+                        + character'pos(L(i)) - character'pos('0');
+          else
+            data_var := data_var*16
+                        + character'pos(L(i)) - character'pos('a') + 10;
+          end if;
+        end loop;
+
+        word := std_logic_vector(to_signed(data_var, 32));
+        rom(index) := word;
+        index := index + 1;
+      end loop;
+    end load_rom;
+
+    procedure load_ram is
       file mem_file     : text open read_mode is "memory.dat";
       variable addr_var : integer;
       variable data_var : integer;
@@ -57,10 +95,10 @@ begin
       variable addr     : Int32;
     begin
       if debug then
-        write(L, string'("loading memory from file"));
+        write(L, string'("loading RAM"));
         writeline(output, L);
       end if;
-
+      
       while not endfile(mem_file) loop
         readline(mem_file, L);
         addr_var := 0;
@@ -84,10 +122,6 @@ begin
           end if;
         end loop;
 
-        if debug then
-          writeline(output, L);
-        end if;
-
         word     := std_logic_vector(to_signed(data_var, 32));
         addr     := std_logic_vector(to_signed(addr_var, 32));
         addr     := "000" & addr(28 downto 0);
@@ -99,7 +133,41 @@ begin
         mem(addr_var+3) := word(31 downto 24);
         
       end loop;
-    end load;
+    end load_ram;
+    
+    procedure load_flash is
+      file mem_file     : text open read_mode is "flash.hex";
+      variable data_var : integer;
+      variable index    : integer;
+      variable i        : integer;
+      variable word     : Int32;
+    begin
+      if debug then
+        write(L, string'("loading FLASH"));
+        writeline(output, L);
+      end if;
+      
+      index := 0;
+      while not endfile(mem_file) loop
+        readline(mem_file, L);
+
+        data_var := 0;
+        for i in 1 to 8 loop
+          if ('0' <= L(i) and L(i) <= '9') then
+            data_var := data_var*16
+                        + character'pos(L(i)) - character'pos('0');
+          else
+            data_var := data_var*16
+                        + character'pos(L(i)) - character'pos('a') + 10;
+          end if;
+        end loop;
+
+        word := std_logic_vector(to_signed(data_var, 32));
+        flash(index) := word(15 downto 0);
+        flash(index + 1) := word(31 downto 16);
+        index := index + 2;
+      end loop;
+    end load_flash;
     
     procedure mem_debug(
       rw         : RwType;
@@ -138,7 +206,9 @@ begin
   begin
     if rst = '0' then
       -- Reset
-      load;
+      load_rom;
+      load_ram;
+      load_flash;
       state := INITIAL;
     elsif rising_edge(clk) then
       if en = '1' then
@@ -156,6 +226,9 @@ begin
               else
                 state := RAM_WRITE;
               end if;
+            elsif addr(31 downto 12) = x"1FC00" then
+              -- ROM
+              state := ROM_READ;
             elsif addr = COM_Data_Addr and rw = W then
               state := COM_WRITE;
             elsif addr = COM_Stat_Addr and rw = R then
@@ -218,14 +291,14 @@ begin
           end if;
           completed <= '1';
           state     := COMPLETE;
+        when ROM_READ =>
+          data_out_tmp := rom(to_integer(unsigned(addr(11 downto 2))));
+          data_out  <= data_out_tmp;
+          mem_debug(rw, addr, data_out_tmp, length);
+          completed <= '1';
+          state     := COMPLETE;
         when FLASH_READ =>
-          if addr(15 downto 0) = x"0000" then
-            data_out_tmp := x"0000457F";
-          elsif addr(15 downto 0) = x"0004" then
-            data_out_tmp := x"0000464C";
-          else
-            data_out_tmp := x"000023" & addr(7 downto 0);
-          end if;
+          data_out_tmp := Int16_Zero & flash(to_integer(unsigned(addr(24 downto 2))));
           data_out  <= data_out_tmp;
           mem_debug(rw, addr, data_out_tmp, length);
           completed <= '1';

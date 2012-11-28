@@ -45,6 +45,11 @@ package Common is
   constant Int32_Z       : Int32 := "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ";
   constant COM_Data_Addr : Int32 := x"1FD003F8";
   constant COM_Stat_Addr : Int32 := x"1FD003FC";
+  
+  constant clk0_freq: integer := 11059200;
+  constant clk1_freq: integer := 50000000;
+  constant RAM_START: Int32 := x"80000000";
+  constant ROM_START: Int32 := x"BFC00000";
 
   -- opcode
   constant op_special : Int6 := "000000";

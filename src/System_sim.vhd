@@ -53,11 +53,11 @@ architecture Behavioral of System_sim is
   constant clk_period : time := 40 ns;
   
 begin
-
   CPU_1 : CPU
     generic map (
       debug      => true,
-      start_addr => x"80000000")
+      start_addr => RAM_START
+    )
     port map (
       clk           => clk,
       rst           => rst,
@@ -67,7 +67,8 @@ begin
       mem_addr      => mem_addr,
       mem_data_in   => mem_data_in,
       mem_data_out  => mem_data_out,
-      mem_completed => mem_completed);
+      mem_completed => mem_completed
+    );
 
   MemoryVirtual_1 : MemoryVirtual
     generic map (
@@ -81,7 +82,8 @@ begin
       addr      => mem_addr,
       data_in   => mem_data_in,
       data_out  => mem_data_out,
-      completed => mem_completed);
+      completed => mem_completed
+    );
 
   -- clock generation, print debug messages
   process
