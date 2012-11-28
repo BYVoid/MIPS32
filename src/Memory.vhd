@@ -389,7 +389,7 @@ begin
   flash_vpen <= '1';
   flash_ce <= '0';
   flash_rp <= '1';
-  flash_addr <= addr(24 downto 2);
+  flash_addr <= addr(23 downto 1);
 
   rom_addr <= addr(11 downto 2);
   ram1_addr <= addr(19 downto 2);
