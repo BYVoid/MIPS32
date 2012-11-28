@@ -544,7 +544,7 @@ begin
       EBase(31 downto 30) := "10";
       KSU := "00";
       IE := '0';
-      EXL := '0';
+      EXL := '1';
       Count := Int32_Zero;
 
       npc   := start_addr;
