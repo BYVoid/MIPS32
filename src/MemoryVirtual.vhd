@@ -277,7 +277,7 @@ begin
           completed <= '1';
           state     := COMPLETE;
         when COM_READ =>
-          data_out_tmp := Int24_Zero & x"03";
+          data_out_tmp := Int24_Zero & x"01";
           data_out  <= data_out_tmp;
           mem_debug(rw, addr, data_out_tmp, length);
           completed <= '1';
