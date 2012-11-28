@@ -187,6 +187,15 @@ begin
           seg7_l_num <= std_logic_vector(to_signed(15, 4));
       end case;
     end;
+    
+    procedure halt is
+    begin
+      if debug then
+        write(L, string'("halt"));
+        writeline(output, L);
+      end if;
+      --sim: finish(0);
+    end procedure;
 
     procedure exception is
     begin
@@ -212,17 +221,10 @@ begin
       if EXL = '0' then
         ExcCode := ExcRI;
         exception;
+      else
+        halt;
       end if;
       state := IF_0;
-    end procedure;
-
-    procedure halt is
-    begin
-      if debug then
-        write(L, string'("halt"));
-        writeline(output, L);
-      end if;
-      --sim: finish(0);
     end procedure;
 
     procedure fetch_debug(
@@ -509,7 +511,9 @@ begin
       reg_debug(W, reg, data);
     end procedure;
     
-    procedure bad_addr (rw : RwType) is
+    procedure bad_addr (
+      rw   : RwType;
+      addr : std_logic_vector(31 downto 0)) is
     begin
       if debug then
         write(L, string'("Bad Address"));
@@ -522,7 +526,10 @@ begin
         else
           ExcCode := ExcAdES;
         end if;
+        BadVAddr := addr;
         exception;
+      else
+        halt;
       end if;
       state := IF_0;
     end procedure;
@@ -542,13 +549,13 @@ begin
               mmu_debug(addr, "000" & addr(28 downto 0));
               mem_addr <= "000" & addr(28 downto 0);
             else
-              bad_addr(rw); -- no right
+              bad_addr(rw, addr); -- no right
             end if;
           when others =>
-            bad_addr(rw); -- wrong address       
+            bad_addr(rw, addr); -- wrong address       
         end case;
       else
-        bad_addr(rw); -- wrong alignment
+        bad_addr(rw, addr); -- wrong alignment
       end if;
     end procedure;
     
@@ -596,7 +603,7 @@ begin
           -- do nothing
         when IF_0 =>
           newline;
-          
+        
           -- finish writing to register
           reg_rw     <= R;
           -- renew pc
@@ -607,13 +614,13 @@ begin
           if IE = '1' and EXL = '0' and ( (IP and IM) /= Int8_Zero) then
             ExcCode := ExcInt;
             exception;
+          else                   
+            -- prepare to fetch an instruction
+            fetch_debug(pc);
+            mem_en     <= '0';
+            conv_mem_addr(R, Lword, pc);
+            state := IF_1;
           end if;
-                   
-          -- prepare to fetch an instruction
-          fetch_debug(pc);
-          mem_en     <= '0';
-          conv_mem_addr(R, Lword, pc);
-          state := IF_1;
         when IF_1 =>
           -- wait until fetching complete
           if mem_completed = '1' then
@@ -812,6 +819,8 @@ begin
                         IP(7) := '0';
                       elsif cp0reg_num = 15 then
                         EBase(31 downto 30) := "10";
+                      elsif cp0reg_num = 12 then
+                        SR(31 downto 28) := "0001";
                       end if;
                       state := IF_0;
                     when others =>
