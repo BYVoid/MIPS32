@@ -14,14 +14,18 @@ architecture Behavioral of System_sim is
       clk : in std_logic;
       rst : in std_logic;
 
-      -- RAM
+      -- Memory
       mem_en        : out std_logic;
       mem_rw        : out RwType;
       mem_length    : out LenType;
       mem_addr      : out std_logic_vector (31 downto 0);
       mem_data_in   : out std_logic_vector (31 downto 0);
       mem_data_out  : in  std_logic_vector (31 downto 0);
-      mem_completed : in  std_logic);
+      mem_completed : in  std_logic;
+      
+      -- Interupts
+      int_com : in std_logic      
+    );
   end component;
   component MemoryVirtual
     generic (
@@ -35,13 +39,15 @@ architecture Behavioral of System_sim is
       addr      : in  std_logic_vector (31 downto 0);
       data_in   : in  std_logic_vector (31 downto 0);
       data_out  : out std_logic_vector (31 downto 0);
-      completed : out std_logic);
+      completed : out std_logic;
+      int_com   : out std_logic
+    );
   end component;
 
   signal clk : std_logic;
   signal rst : std_logic;
 
-  --RAM
+  -- Memory
   signal mem_en        : std_logic;
   signal mem_rw        : RwType;
   signal mem_length    : LenType;
@@ -49,6 +55,9 @@ architecture Behavioral of System_sim is
   signal mem_data_in   : std_logic_vector (31 downto 0);
   signal mem_data_out  : std_logic_vector (31 downto 0);
   signal mem_completed : std_logic;
+  
+  -- Interupts
+  signal int_com : std_logic;
 
   constant clk_period : time := 40 ns;
   
@@ -67,7 +76,8 @@ begin
       mem_addr      => mem_addr,
       mem_data_in   => mem_data_in,
       mem_data_out  => mem_data_out,
-      mem_completed => mem_completed
+      mem_completed => mem_completed,
+      int_com       => int_com
     );
 
   MemoryVirtual_1 : MemoryVirtual
@@ -82,7 +92,8 @@ begin
       addr      => mem_addr,
       data_in   => mem_data_in,
       data_out  => mem_data_out,
-      completed => mem_completed
+      completed => mem_completed,
+      int_com   => int_com
     );
 
   -- clock generation, print debug messages

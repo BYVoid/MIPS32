@@ -18,12 +18,15 @@ entity MemoryVirtual is
     addr      : in  std_logic_vector (31 downto 0);
     data_in   : in  std_logic_vector (31 downto 0);
     data_out  : out std_logic_vector (31 downto 0);
-    completed : out std_logic
+    completed : out std_logic;
+    int_com   : out std_logic
     );
 end MemoryVirtual;
 
 architecture Behavioral of MemoryVirtual is
 begin
+  int_com <= '0';
+  
   process(clk, rst)
     
     type StateType is (
@@ -173,6 +176,7 @@ begin
       rw         : RwType;
       addr, data : std_logic_vector;
       length     : LenType) is
+      variable L            : line;
     begin
       if debug then
         write(L, string'("Mem["));

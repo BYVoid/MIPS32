@@ -14,7 +14,7 @@ entity CPU is
     clk : in std_logic;
     rst : in std_logic;
 
-    -- RAM
+    -- Memory
     mem_en        : out std_logic                      := '1';
     mem_rw        : out RwType;
     mem_length    : out LenType;
@@ -22,6 +22,9 @@ entity CPU is
     mem_data_in   : out std_logic_vector (31 downto 0);
     mem_data_out  : in  std_logic_vector (31 downto 0);
     mem_completed : in  std_logic;
+    
+    -- Interupts
+    int_com : in std_logic;
     
     led    : out std_logic_vector (15 downto 0);
     seg7_l_num: out Int4
@@ -146,7 +149,19 @@ begin
     alias EPC : Int32 is cp0regs(14);
     alias EBase : Int32 is cp0regs(15);
     
-
+    -- SR
+    alias IM : std_logic_vector(7 downto 0) is SR(15 downto 8);
+    alias KSU : std_logic_vector(1 downto 0) is SR(4 downto 3);
+    alias EXL : std_logic is SR(1);
+    alias IE : std_logic is SR(0);
+    
+    -- Cause
+    alias IP : std_logic_vector(7 downto 0) is Cause(15 downto 8);
+    alias ExcCode : std_logic_vector(4 downto 0) is Cause(6 downto 2);
+    
+    -- EBase
+    alias ExcBase : std_logic_vector(17 downto 0) is EBase(29 downto 12);
+   
     procedure print_state(
       state: in StateType;
       signal seg7_l_num: out Int4) is
@@ -173,6 +188,10 @@ begin
       end case;
     end;
 
+    procedure exception is
+    begin
+    end procedure;    
+    
     procedure instr_invalid is
     begin
       if debug then
@@ -513,12 +532,34 @@ begin
       mem_en <= '1';
       mem_rw <= R;
       reg_rw <= R;
+      
+      SR(31 downto 28) := "0001";
+      EBase(31 downto 30) := "10";
+      KSU := "00";
+      IE := '0';
+      EXL := '0';
+      Count := Int32_Zero;
 
       npc   := start_addr;
       state := IF_0;
       
     elsif rising_edge(clk) then
       print_state(state, seg7_l_num); -- Debug --
+
+      -- fresh interupt bit
+      Count := std_logic_vector(unsigned(Count) + to_unsigned(1, 32));
+      if Count = Compare then
+        IP(7) := '1';
+      end if;
+      IP(4) := int_com;
+      
+      -- throw exception if interupted
+      if IE = '1' and ( (IP and IM) /= Int8_Zero) then
+        EXL := '1';
+        ExcCode := ExcInt;
+        exception;
+      else
+        
       case state is
         when HALT =>
           -- do nothing
@@ -822,6 +863,8 @@ begin
               instr_invalid;
           end case;
       end case;
+      
+      end if;
     end if;
   end process;
   
