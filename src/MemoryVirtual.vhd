@@ -40,12 +40,12 @@ begin
     constant NUM_RAM_CELLS : integer := 1024*1024;
     constant NUM_ROM_CELLS: integer := 1024;
     constant NUM_FLASH_CELLS: integer := 400000;
-    type     VirtualMemoryType is array(0 to NUM_RAM_CELLS - 1) of Int8;
+    type     VirtualRamType is array(0 to NUM_RAM_CELLS - 1) of Int8;
     type     VirtualRomType is array(0 to NUM_ROM_CELLS - 1) of Int32;
     type     VirtualFlashType is array(0 to NUM_FLASH_CELLS - 1) of Int16;
 
     variable state        : StateType;
-    variable mem          : VirtualMemoryType;
+    variable ram          : VirtualRamType;
     variable rom          : VirtualRomType;
     variable flash        : VirtualFlashType;
     variable addr_int     : integer;
@@ -60,10 +60,10 @@ begin
       variable i        : integer;
       variable word     : Int32;
     begin
-      if debug then
-        write(L, string'("loading ROM"));
-        writeline(output, L);
-      end if;
+      -- if debug then
+        -- write(L, string'("loading ROM"));
+        -- writeline(output, L);
+      -- end if;
       
       index := 0;
       while not endfile(mem_file) loop
@@ -94,10 +94,10 @@ begin
       variable word     : Int32;
       variable addr     : Int32;
     begin
-      if debug then
-        write(L, string'("loading RAM"));
-        writeline(output, L);
-      end if;
+      -- if debug then
+        -- write(L, string'("loading RAM"));
+        -- writeline(output, L);
+      -- end if;
       
       while not endfile(mem_file) loop
         readline(mem_file, L);
@@ -127,10 +127,10 @@ begin
         addr     := "000" & addr(28 downto 0);
         addr_var := to_integer(unsigned(addr));
 
-        mem(addr_var)   := word(7 downto 0);
-        mem(addr_var+1) := word(15 downto 8);
-        mem(addr_var+2) := word(23 downto 16);
-        mem(addr_var+3) := word(31 downto 24);
+        ram(addr_var)   := word(7 downto 0);
+        ram(addr_var+1) := word(15 downto 8);
+        ram(addr_var+2) := word(23 downto 16);
+        ram(addr_var+3) := word(31 downto 24);
         
       end loop;
     end load_ram;
@@ -142,10 +142,10 @@ begin
       variable i        : integer;
       variable word     : Int32;
     begin
-      if debug then
-        write(L, string'("loading FLASH"));
-        writeline(output, L);
-      end if;
+      -- if debug then
+        -- write(L, string'("loading FLASH"));
+        -- writeline(output, L);
+      -- end if;
       
       index := 0;
       while not endfile(mem_file) loop
@@ -249,17 +249,17 @@ begin
           -- Read ram
           case length is
             when Lword =>
-              data_out_tmp(7 downto 0)   := mem(addr_int);
-              data_out_tmp(15 downto 8)  := mem(addr_int+1);
-              data_out_tmp(23 downto 16) := mem(addr_int+2);
-              data_out_tmp(31 downto 24) := mem(addr_int+3);
+              data_out_tmp(7 downto 0)   := ram(addr_int);
+              data_out_tmp(15 downto 8)  := ram(addr_int+1);
+              data_out_tmp(23 downto 16) := ram(addr_int+2);
+              data_out_tmp(31 downto 24) := ram(addr_int+3);
             when Lhalf =>
-              data_out_tmp(7 downto 0)   := mem(addr_int);
-              data_out_tmp(15 downto 8)  := mem(addr_int+1);
+              data_out_tmp(7 downto 0)   := ram(addr_int);
+              data_out_tmp(15 downto 8)  := ram(addr_int+1);
               data_out_tmp(23 downto 16) := Int8_Zero;
               data_out_tmp(31 downto 24) := Int8_Zero;
             when Lbyte =>
-              data_out_tmp(7 downto 0)   := mem(addr_int);
+              data_out_tmp(7 downto 0)   := ram(addr_int);
               data_out_tmp(15 downto 8)  := Int8_Zero;
               data_out_tmp(23 downto 16) := Int8_Zero;
               data_out_tmp(31 downto 24) := Int8_Zero;
@@ -271,21 +271,21 @@ begin
         when RAM_WRITE =>
           case length is
             when Lword =>
-              mem(addr_int)   := data_in(7 downto 0);
-              mem(addr_int+1) := data_in(15 downto 8);
-              mem(addr_int+2) := data_in(23 downto 16);
-              mem(addr_int+3) := data_in(31 downto 24);
+              ram(addr_int)   := data_in(7 downto 0);
+              ram(addr_int+1) := data_in(15 downto 8);
+              ram(addr_int+2) := data_in(23 downto 16);
+              ram(addr_int+3) := data_in(31 downto 24);
             when Lhalf =>
-              mem(addr_int)   := data_in(7 downto 0);
-              mem(addr_int+1) := data_in(15 downto 8);
+              ram(addr_int)   := data_in(7 downto 0);
+              ram(addr_int+1) := data_in(15 downto 8);
             when Lbyte =>
-              mem(addr_int) := data_in(7 downto 0);
+              ram(addr_int) := data_in(7 downto 0);
           end case;
           mem_debug(rw, addr, data_in, length);
           completed <= '1';
           state     := COMPLETE;
         when COM_READ =>
-          data_out_tmp := Int24_Zero & x"03";
+          data_out_tmp := Int24_Zero & x"01";
           data_out  <= data_out_tmp;
           mem_debug(rw, addr, data_out_tmp, length);
           completed <= '1';
