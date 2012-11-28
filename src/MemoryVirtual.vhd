@@ -33,6 +33,7 @@ begin
       RAM_WRITE,
       COM_READ,
       COM_WRITE,
+      FLASH_READ,
       COMPLETE
       );
 
@@ -159,6 +160,8 @@ begin
               state := COM_WRITE;
             elsif addr = COM_Stat_Addr and rw = R then
               state := COM_READ;
+            elsif addr(31 downto 24) = x"1E" and rw = R then
+              state := FLASH_READ;
             end if;
           end if;
         when RAM_READ =>
@@ -213,6 +216,18 @@ begin
           else
             mem_debug(rw, addr, data_in(7 downto 0), Lbyte);
           end if;
+          completed <= '1';
+          state     := COMPLETE;
+        when FLASH_READ =>
+          if addr(15 downto 0) = x"0000" then
+            data_out_tmp := x"0000457F";
+          elsif addr(15 downto 0) = x"0004" then
+            data_out_tmp := x"0000464C";
+          else
+            data_out_tmp := x"000023" & addr(7 downto 0);
+          end if;
+          data_out  <= data_out_tmp;
+          mem_debug(rw, addr, data_out_tmp, length);
           completed <= '1';
           state     := COMPLETE;
         when COMPLETE =>
