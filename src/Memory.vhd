@@ -47,11 +47,10 @@ entity Memory is
 end Memory;
 
 architecture Behavioral of Memory is
-  component Rom1
+  component Rom
     port (
-      clka: in std_logic;
-      addra: in Int10;
-      douta: out Int32
+      addr: in Int10;
+      data: out Int32
     );
   end component;
 
@@ -395,10 +394,9 @@ begin
   ram1_addr <= addr(19 downto 2);
   ram2_addr <= addr(19 downto 2);
   
-  rom_instance: Rom1 port map (
-    clka => clk,
-    addra => rom_addr,
-    douta => rom_data
+  rom_instance: Rom port map (
+    addr => rom_addr,
+    data => rom_data
   );
   
   process(clk, rst)

@@ -150,17 +150,17 @@ begin
     alias EBase : Int32 is cp0regs(15);
     
     -- SR
-    alias IM : std_logic_vector(7 downto 0) is SR(15 downto 8);
-    alias KSU : std_logic_vector(1 downto 0) is SR(4 downto 3);
-    alias EXL : std_logic is SR(1);
-    alias IE : std_logic is SR(0);
+    alias IM : std_logic_vector(7 downto 0) is cp0regs(12)(15 downto 8);
+    alias KSU : std_logic_vector(1 downto 0) is cp0regs(12)(4 downto 3);
+    alias EXL : std_logic is cp0regs(12)(1);
+    alias IE : std_logic is cp0regs(12)(0);
     
     -- Cause
-    alias IP : std_logic_vector(7 downto 0) is Cause(15 downto 8);
-    alias ExcCode : std_logic_vector(4 downto 0) is Cause(6 downto 2);
+    alias IP : std_logic_vector(7 downto 0) is cp0regs(13)(15 downto 8);
+    alias ExcCode : std_logic_vector(4 downto 0) is cp0regs(13)(6 downto 2);
     
     -- EBase
-    alias ExcBase : std_logic_vector(17 downto 0) is EBase(29 downto 12);
+    alias ExcBase : std_logic_vector(17 downto 0) is cp0regs(15)(29 downto 12);
    
     procedure print_state(
       state: in StateType;
