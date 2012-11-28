@@ -15,6 +15,7 @@ entity Memory is
     data_in:      in      Int32;
     data_out:     out     Int32;
     completed:    out     std_logic;
+    int_com:      out     std_logic;
     
     -- Import --
     ram1_en:      out     std_logic;
@@ -393,6 +394,8 @@ begin
   rom_addr <= addr(11 downto 2);
   ram1_addr <= addr(19 downto 2);
   ram2_addr <= addr(19 downto 2);
+  
+  int_com <= com_ready;
   
   rom_instance: Rom port map (
     addr => rom_addr,
