@@ -233,8 +233,16 @@ begin
               state := COM_WRITE;
             elsif addr = COM_Stat_Addr and rw = R then
               state := COM_READ;
-            elsif addr(31 downto 24) = x"1E" and rw = R then
-              state := FLASH_READ;
+            elsif addr(31 downto 24) = x"1E" then
+              -- FLASH
+              if rw = R then
+                state := FLASH_READ;
+              else
+                -- ignore flash write
+                completed <= '1';
+                state := COMPLETE;
+              end if;
+            else
             end if;
           end if;
         when RAM_READ =>
