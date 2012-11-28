@@ -14,6 +14,8 @@ if (test-path work) {rm -force -recurse work}
 if (test-path *wlf*) {rm -force *wlf*}
 if (test-path CPU_sim.vhd) {rm -force CPU_sim.vhd}
 if (test-path memory.dat) {rm -force memory.dat}
+if (test-path rom.hex) {rm -force rom.hex}
+if (test-path flash.hex) {rm -force flash.hex}
 if (test-path *.in) {rm -force *.in}
 if (test-path *.debug) {rm -force *.debug}
 if (test-path *.output) {rm -force *.output}
