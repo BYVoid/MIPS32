@@ -6,7 +6,7 @@ start:
   la $s1, 0xbfd003fc
   
   lui   $t0, 0x8234
-  mtc0  $t0, $12
+  mtc0  $t0, $14
   li    $t1, 0x0023
   mult  $t0, $t1
   mfhi  $a0
@@ -16,7 +16,7 @@ start:
   jal wrtie_word_com
   nop
   
-  mfc0  $t1, $12
+  mfc0  $t1, $14
   li    $t0, 0x0023
   multu $t0, $t1
   mfhi  $a0
