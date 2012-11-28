@@ -533,6 +533,7 @@ begin
       mem_rw <= R;
       reg_rw <= R;
       
+      -- setting initial values for cop0 regs
       SR(31 downto 28) := "0001";
       EBase(31 downto 30) := "10";
       KSU := "00";
@@ -560,310 +561,310 @@ begin
         exception;
       else
         
-      case state is
-        when HALT =>
-          -- do nothing
-        when IF_0 =>
-          newline;
-          -- finish writing to register
-          reg_rw     <= R;
-          -- renew pc
-          pc         := npc;
-          npc        := std_logic_vector(unsigned(pc) + to_unsigned(4, 32));
-          -- prepare to fetch an instruction
-          fetch_debug(pc);
-          mem_en     <= '0';
-          mem_rw     <= R;
-          mem_length <= Lword;
-          conv_mem_addr(pc);
-          state := IF_1;
-        when IF_1 =>
-          -- wait until fetching complete
-          if mem_completed = '1' then
-            -- instruction fetched
-            mem_en <= '1';
-            instr  := mem_data_out;
-            state  := ID_0;
-          end if;
-        when others =>
-          if state = ID_0 then
-            cp0reg_num := to_integer(unsigned(rd));
-            decode_debug;
-            alu_op   <= op;
-            alu_func <= func;
-            alu_rt   <= rt;
-          end if;
-          -- ID_0, EX_0, MEM_0, MEM_1, WB_0 for each instruction
-          case op is
-            when op_special =>
-              case func is
-                when func_syscall =>
-                  halt;
-                  state := HALT;
-                when func_jr | func_jalr =>
-                  case state is
-                    when ID_0 =>
-                      reg_rdReg1 <= rs;
-                      state      := WB_0;
-                    when WB_0 =>
-                      reg_debug(R, reg_rdReg1, reg_rdData1);
-                      npc := reg_rdData1;
-                      if func = func_jalr then
-                        write_reg(rd, std_logic_vector(unsigned(pc) + to_unsigned(8, 32)));
-                      end if;
-                      state := IF_0;
-                    when others =>
-                      -- impossible
-                  end case;
-                when func_mfhi =>
-                  hilo_debug(R, "hi", hi);
-                  write_reg(rd, hi);
-                  state := IF_0;
-                when func_mflo =>
-                  hilo_debug(R, "lo", lo);
-                  write_reg(rd, lo);
-                  state := IF_0;
-                when func_mthi | func_mtlo =>
-                  case state is
-                    when ID_0 =>
-                      reg_rdReg1 <= rs;
-                      state      := WB_0;
-                    when WB_0 =>
-                      reg_debug(R, reg_rdReg1, reg_rdData1);
-                      if func = func_mthi then
-                        hi := reg_rdData1;
-                        hilo_debug(W, "hi", hi);
-                      else
-                        lo := reg_rdData1;
-                        hilo_debug(W, "lo", lo);
-                      end if;
-                      state := IF_0;
-                    when others =>
-                      -- impossible
-                  end case;
-                when func_sll | func_srl | func_sra |
-                  func_sllv | func_srlv | func_srav |
-                  func_addu | func_subu |
-                  func_mult | func_multu |
-                  func_and | func_or | func_xor | func_nor |
-                  func_slt | func_sltu =>
-                  case state is
-                    when ID_0 =>
-                      reg_rdReg1 <= rs;
-                      reg_rdReg2 <= rt;
-                      state      := EX_0;
-                    when EX_0 =>
-                      if func /= func_sll and
-                        func /= func_srl and
-                        func /= func_sra then
+        case state is
+          when HALT =>
+            -- do nothing
+          when IF_0 =>
+            newline;
+            -- finish writing to register
+            reg_rw     <= R;
+            -- renew pc
+            pc         := npc;
+            npc        := std_logic_vector(unsigned(pc) + to_unsigned(4, 32));
+            -- prepare to fetch an instruction
+            fetch_debug(pc);
+            mem_en     <= '0';
+            mem_rw     <= R;
+            mem_length <= Lword;
+            conv_mem_addr(pc);
+            state := IF_1;
+          when IF_1 =>
+            -- wait until fetching complete
+            if mem_completed = '1' then
+              -- instruction fetched
+              mem_en <= '1';
+              instr  := mem_data_out;
+              state  := ID_0;
+            end if;
+          when others =>
+            if state = ID_0 then
+              cp0reg_num := to_integer(unsigned(rd));
+              decode_debug;
+              alu_op   <= op;
+              alu_func <= func;
+              alu_rt   <= rt;
+            end if;
+            -- ID_0, EX_0, MEM_0, MEM_1, WB_0 for each instruction
+            case op is
+              when op_special =>
+                case func is
+                  when func_syscall =>
+                    halt;
+                    state := HALT;
+                  when func_jr | func_jalr =>
+                    case state is
+                      when ID_0 =>
+                        reg_rdReg1 <= rs;
+                        state      := WB_0;
+                      when WB_0 =>
                         reg_debug(R, reg_rdReg1, reg_rdData1);
-                      end if;
-                      reg_debug(R, reg_rdReg2, reg_rdData2);
-                      if func = func_sll or func = func_srl or func = func_sra then
-                        alu_a <= Int24_Zero & "000" & sa;
-                      else
-                        alu_a <= reg_rdData1;
-                      end if;
-                      alu_b <= reg_rdData2;
-                      state := WB_0;
-                    when WB_0 =>
-                      if func = func_mult or func = func_multu then
-                        alu_debug(alu_a, alu_b, alu_r, alu_rext);
-                        hi := alu_rext;
-                        lo := alu_r;
-                        hilo_debug(W, "hi", hi);
-                        hilo_debug(W, "lo", lo);
-                      else
-                        alu_debug(alu_a, alu_b, alu_r);
-                        write_reg(rd, alu_r);
-                      end if;
-                      state := IF_0;
-                    when others =>
-                      -- impossible;
-                  end case;
-                when others =>
-                  instr_invalid;
-              end case;
-            when op_regimm | op_beq | op_bne | op_blez | op_bgtz =>
-              case state is
-                when ID_0 =>
-                  if op = op_regimm and rt /= rt_bltz and rt /= rt_bgez then
-                    instr_invalid;
-                  end if;
-                  reg_rdReg1 <= rs;
-                  reg_rdReg2 <= rt;
-                  state      := EX_0;
-                when EX_0 =>
-                  reg_debug(R, reg_rdReg1, reg_rdData1);
-                  if op = op_beq or op = op_bne then
-                    reg_debug(R, reg_rdReg2, reg_rdData2);
-                  end if;
-                  alu_a <= reg_rdData1;
-                  alu_b <= reg_rdData2;
-                  state := WB_0;
-                when WB_0 =>
-                  if alu_r(0) = '1' then
-                    npc := std_logic_vector(unsigned(pc) + to_unsigned(4, 32) + unsigned(resize((signed(imm) sll 2), 32)));
-                  end if;
-                  state := IF_0;
-                when others =>
-                  -- impossible
-              end case;
-            when op_j | op_jal =>
-              case state is
-                when ID_0 =>
-                  npc := npc(31 downto 28) & instr_index & "00";
-                  if op = op_j then
+                        npc := reg_rdData1;
+                        if func = func_jalr then
+                          write_reg(rd, std_logic_vector(unsigned(pc) + to_unsigned(8, 32)));
+                        end if;
+                        state := IF_0;
+                      when others =>
+                        -- impossible
+                    end case;
+                  when func_mfhi =>
+                    hilo_debug(R, "hi", hi);
+                    write_reg(rd, hi);
                     state := IF_0;
-                  else
+                  when func_mflo =>
+                    hilo_debug(R, "lo", lo);
+                    write_reg(rd, lo);
+                    state := IF_0;
+                  when func_mthi | func_mtlo =>
+                    case state is
+                      when ID_0 =>
+                        reg_rdReg1 <= rs;
+                        state      := WB_0;
+                      when WB_0 =>
+                        reg_debug(R, reg_rdReg1, reg_rdData1);
+                        if func = func_mthi then
+                          hi := reg_rdData1;
+                          hilo_debug(W, "hi", hi);
+                        else
+                          lo := reg_rdData1;
+                          hilo_debug(W, "lo", lo);
+                        end if;
+                        state := IF_0;
+                      when others =>
+                        -- impossible
+                    end case;
+                  when func_sll | func_srl | func_sra |
+                    func_sllv | func_srlv | func_srav |
+                    func_addu | func_subu |
+                    func_mult | func_multu |
+                    func_and | func_or | func_xor | func_nor |
+                    func_slt | func_sltu =>
+                    case state is
+                      when ID_0 =>
+                        reg_rdReg1 <= rs;
+                        reg_rdReg2 <= rt;
+                        state      := EX_0;
+                      when EX_0 =>
+                        if func /= func_sll and
+                          func /= func_srl and
+                          func /= func_sra then
+                          reg_debug(R, reg_rdReg1, reg_rdData1);
+                        end if;
+                        reg_debug(R, reg_rdReg2, reg_rdData2);
+                        if func = func_sll or func = func_srl or func = func_sra then
+                          alu_a <= Int24_Zero & "000" & sa;
+                        else
+                          alu_a <= reg_rdData1;
+                        end if;
+                        alu_b <= reg_rdData2;
+                        state := WB_0;
+                      when WB_0 =>
+                        if func = func_mult or func = func_multu then
+                          alu_debug(alu_a, alu_b, alu_r, alu_rext);
+                          hi := alu_rext;
+                          lo := alu_r;
+                          hilo_debug(W, "hi", hi);
+                          hilo_debug(W, "lo", lo);
+                        else
+                          alu_debug(alu_a, alu_b, alu_r);
+                          write_reg(rd, alu_r);
+                        end if;
+                        state := IF_0;
+                      when others =>
+                        -- impossible;
+                    end case;
+                  when others =>
+                    instr_invalid;
+                end case;
+              when op_regimm | op_beq | op_bne | op_blez | op_bgtz =>
+                case state is
+                  when ID_0 =>
+                    if op = op_regimm and rt /= rt_bltz and rt /= rt_bgez then
+                      instr_invalid;
+                    end if;
+                    reg_rdReg1 <= rs;
+                    reg_rdReg2 <= rt;
+                    state      := EX_0;
+                  when EX_0 =>
+                    reg_debug(R, reg_rdReg1, reg_rdData1);
+                    if op = op_beq or op = op_bne then
+                      reg_debug(R, reg_rdReg2, reg_rdData2);
+                    end if;
+                    alu_a <= reg_rdData1;
+                    alu_b <= reg_rdData2;
                     state := WB_0;
-                  end if;
-                when WB_0 =>
-                  write_reg("11111", std_logic_vector(unsigned(pc) + to_unsigned(8, 32)));
-                  state := IF_0;
-                when others =>
-                  -- impossible
-              end case;
-            when op_addiu | op_slti | op_sltiu | op_andi | op_ori | op_xori =>
-              case state is
-                when ID_0 =>
-                  reg_rdReg1 <= rs;
-                  state      := EX_0;
-                when EX_0 =>
-                  reg_debug(R, reg_rdReg1, reg_rdData1);
-                  alu_a <= reg_rdData1;
-                  if op = op_andi or op = op_ori or op = op_xori then
-                    alu_b <= Int16_Zero & imm;
-                  else
-                    alu_b <= sign_extend(imm);
-                  end if;
-                  state := WB_0;
-                when WB_0 =>
-                  alu_debug(alu_a, alu_b, alu_r);
-                  write_reg(rt, alu_r);
-                  state := IF_0;
-                when others =>
-                  -- impossible
-              end case;
-            when op_lui =>
-              write_reg(rt, imm & Int16_Zero);
-              state := IF_0;
-            when op_cop0 =>
-              case rs is
-                when rs_mfc0 =>
-                  cp0_debug(R, cp0reg_num, cp0regs(cp0reg_num));
-                  write_reg(rt, cp0regs(cp0reg_num));
-                  state := IF_0;
-                when rs_mtc0 =>
-                  case state is
-                    when ID_0 =>
-                      reg_rdReg2 <= rt;
-                      state      := WB_0;
-                    when WB_0 =>
-                      reg_debug(R, reg_rdReg2, reg_rdData2);
-                      cp0regs(cp0reg_num) := reg_rdData2;
-                      cp0_debug(W, cp0reg_num, cp0regs(cp0reg_num));
+                  when WB_0 =>
+                    if alu_r(0) = '1' then
+                      npc := std_logic_vector(unsigned(pc) + to_unsigned(4, 32) + unsigned(resize((signed(imm) sll 2), 32)));
+                    end if;
+                    state := IF_0;
+                  when others =>
+                    -- impossible
+                end case;
+              when op_j | op_jal =>
+                case state is
+                  when ID_0 =>
+                    npc := npc(31 downto 28) & instr_index & "00";
+                    if op = op_j then
                       state := IF_0;
-                    when others =>
-                      -- impossible
-                  end case;
-                when rs_co =>
-                  if func = func_tlbwi then
+                    else
+                      state := WB_0;
+                    end if;
+                  when WB_0 =>
+                    write_reg("11111", std_logic_vector(unsigned(pc) + to_unsigned(8, 32)));
                     state := IF_0;
-                  elsif func = func_eret then
+                  when others =>
+                    -- impossible
+                end case;
+              when op_addiu | op_slti | op_sltiu | op_andi | op_ori | op_xori =>
+                case state is
+                  when ID_0 =>
+                    reg_rdReg1 <= rs;
+                    state      := EX_0;
+                  when EX_0 =>
+                    reg_debug(R, reg_rdReg1, reg_rdData1);
+                    alu_a <= reg_rdData1;
+                    if op = op_andi or op = op_ori or op = op_xori then
+                      alu_b <= Int16_Zero & imm;
+                    else
+                      alu_b <= sign_extend(imm);
+                    end if;
+                    state := WB_0;
+                  when WB_0 =>
+                    alu_debug(alu_a, alu_b, alu_r);
+                    write_reg(rt, alu_r);
                     state := IF_0;
-                  else
+                  when others =>
+                    -- impossible
+                end case;
+              when op_lui =>
+                write_reg(rt, imm & Int16_Zero);
+                state := IF_0;
+              when op_cop0 =>
+                case rs is
+                  when rs_mfc0 =>
+                    cp0_debug(R, cp0reg_num, cp0regs(cp0reg_num));
+                    write_reg(rt, cp0regs(cp0reg_num));
+                    state := IF_0;
+                  when rs_mtc0 =>
+                    case state is
+                      when ID_0 =>
+                        reg_rdReg2 <= rt;
+                        state      := WB_0;
+                      when WB_0 =>
+                        reg_debug(R, reg_rdReg2, reg_rdData2);
+                        cp0regs(cp0reg_num) := reg_rdData2;
+                        cp0_debug(W, cp0reg_num, cp0regs(cp0reg_num));
+                        state := IF_0;
+                      when others =>
+                        -- impossible
+                    end case;
+                  when rs_co =>
+                    if func = func_tlbwi then
+                      state := IF_0;
+                    elsif func = func_eret then
+                      state := IF_0;
+                    else
+                      instr_invalid;
+                    end if;
+                  when others =>
                     instr_invalid;
-                  end if;
-                when others =>
-                  instr_invalid;
-              end case;
-            when op_lb | op_lh | op_lw | op_lbu | op_lhu =>
-              case state is
-                when ID_0 =>
-                  reg_rdReg1 <= rs;
-                  state      := EX_0;
-                when EX_0 =>
-                  reg_debug(R, reg_rdReg1, reg_rdData1);
-                  alu_a <= reg_rdData1;
-                  alu_b <= sign_extend(imm);
-                  state := MEM_0;
-                when MEM_0 =>
-                  alu_debug(alu_a, alu_b, alu_r);
-                  mem_en   <= '0';
-                  mem_rw   <= R;
-                  conv_mem_addr(alu_r);
-                  if op = op_lw then
-                    mem_length <= Lword;
-                  elsif op = op_lh or op = op_lhu then
-                    mem_length <= Lhalf;
-                  else
-                    mem_length <= Lbyte;
-                  end if;
-                  state := MEM_1;
-                when MEM_1 =>
-                  -- wait until loading complete
-                  if mem_completed = '1' then
-                    mem_en <= '1';
-                    state  := WB_0;
-                  end if;
-                when WB_0 =>
-                  if op = op_lb then
-                    write_reg(rt, sign_extend(mem_data_out(7 downto 0)));
-                  elsif op = op_lh then
-                    write_reg(rt, sign_extend(mem_data_out(15 downto 0)));
-                  else
-                    write_reg(rt, mem_data_out);
-                  end if;
-                  state := IF_0;
-                when others =>
-                  -- impossible
-              end case;
-            when op_sb | op_sh | op_sw =>
-              case state is
-                when ID_0 =>
-                  reg_rdReg1 <= rs;
-                  reg_rdReg2 <= rt;
-                  state      := EX_0;
-                when EX_0 =>
-                  reg_debug(R, reg_rdReg1, reg_rdData1);
-                  reg_debug(R, reg_rdReg2, reg_rdData2);
-                  alu_a <= reg_rdData1;
-                  alu_b <= sign_extend(imm);
-                  state := MEM_0;
-                when MEM_0 =>
-                  alu_debug(alu_a, alu_b, alu_r);
-                  mem_en      <= '0';
-                  mem_rw      <= W;
-                  mem_data_in <= reg_rdData2;
-                  conv_mem_addr(alu_r);
-                  
-                  if op = op_sw then
-                    mem_length <= Lword;
-                  elsif op = op_sh then
-                    mem_length <= Lhalf;
-                  else
-                    mem_length <= Lbyte;
-                  end if;
-                  state := MEM_1;
-                when MEM_1 =>
-                  -- wait until storing complete
-                  if mem_completed = '1' then
-                    mem_en <= '1';
-                    mem_rw <= R;
-                    state  := IF_0;
-                  end if;
-                when others =>
-                  -- impossible
-              end case;
-            when op_cache =>
-              -- NOP
-              state := IF_0;
-            when others =>
-              instr_invalid;
-          end case;
-      end case;
-      
+                end case;
+              when op_lb | op_lh | op_lw | op_lbu | op_lhu =>
+                case state is
+                  when ID_0 =>
+                    reg_rdReg1 <= rs;
+                    state      := EX_0;
+                  when EX_0 =>
+                    reg_debug(R, reg_rdReg1, reg_rdData1);
+                    alu_a <= reg_rdData1;
+                    alu_b <= sign_extend(imm);
+                    state := MEM_0;
+                  when MEM_0 =>
+                    alu_debug(alu_a, alu_b, alu_r);
+                    mem_en   <= '0';
+                    mem_rw   <= R;
+                    conv_mem_addr(alu_r);
+                    if op = op_lw then
+                      mem_length <= Lword;
+                    elsif op = op_lh or op = op_lhu then
+                      mem_length <= Lhalf;
+                    else
+                      mem_length <= Lbyte;
+                    end if;
+                    state := MEM_1;
+                  when MEM_1 =>
+                    -- wait until loading complete
+                    if mem_completed = '1' then
+                      mem_en <= '1';
+                      state  := WB_0;
+                    end if;
+                  when WB_0 =>
+                    if op = op_lb then
+                      write_reg(rt, sign_extend(mem_data_out(7 downto 0)));
+                    elsif op = op_lh then
+                      write_reg(rt, sign_extend(mem_data_out(15 downto 0)));
+                    else
+                      write_reg(rt, mem_data_out);
+                    end if;
+                    state := IF_0;
+                  when others =>
+                    -- impossible
+                end case;
+              when op_sb | op_sh | op_sw =>
+                case state is
+                  when ID_0 =>
+                    reg_rdReg1 <= rs;
+                    reg_rdReg2 <= rt;
+                    state      := EX_0;
+                  when EX_0 =>
+                    reg_debug(R, reg_rdReg1, reg_rdData1);
+                    reg_debug(R, reg_rdReg2, reg_rdData2);
+                    alu_a <= reg_rdData1;
+                    alu_b <= sign_extend(imm);
+                    state := MEM_0;
+                  when MEM_0 =>
+                    alu_debug(alu_a, alu_b, alu_r);
+                    mem_en      <= '0';
+                    mem_rw      <= W;
+                    mem_data_in <= reg_rdData2;
+                    conv_mem_addr(alu_r);
+                    
+                    if op = op_sw then
+                      mem_length <= Lword;
+                    elsif op = op_sh then
+                      mem_length <= Lhalf;
+                    else
+                      mem_length <= Lbyte;
+                    end if;
+                    state := MEM_1;
+                  when MEM_1 =>
+                    -- wait until storing complete
+                    if mem_completed = '1' then
+                      mem_en <= '1';
+                      mem_rw <= R;
+                      state  := IF_0;
+                    end if;
+                  when others =>
+                    -- impossible
+                end case;
+              when op_cache =>
+                -- NOP
+                state := IF_0;
+              when others =>
+                instr_invalid;
+            end case;
+        end case;
+        
       end if;
     end if;
   end process;
