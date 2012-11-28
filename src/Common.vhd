@@ -168,7 +168,13 @@ package Common is
      -- only first 15 regs' names are listed
      
   -- ExcCode for Cause register
-  constant ExcInt : Int5 := "00000";
+  constant ExcInt     : Int5 := "00000";
+  constant ExcTLBL    : Int5 := "00010";
+  constant ExcTLBS    : Int5 := "00011";
+  constant ExcAdEL    : Int5 := "00100";
+  constant ExcAdES    : Int5 := "00101";
+  constant ExcSyscall : Int5 := "01000";
+  constant ExcRI      : Int5 := "01010";
 
   function boolean_to_std_logic(cond : boolean) return std_logic;
   function to_hex_string(data_in     : std_logic_vector) return string;
