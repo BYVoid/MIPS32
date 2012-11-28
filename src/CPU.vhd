@@ -192,31 +192,29 @@ begin
     begin
       EXL   := '1';
       EPC   := pc;
-      pc    := std_logic_vector(("10" & (unsigned(ExcBase) sll 10)) + resize(x"180", 32));
+      npc   := add("10" & ExcBase & "000000000000", 16#180#);
+      if debug then
+        write(L, string'("Exception (ExcCode:"));
+        write(L, to_integer(unsigned(ExcCode)));
+        write(L, string'(")"));
+        writeline(output, L);
+      end if;
       state := IF_0;
     end procedure;    
     
     procedure instr_invalid is
     begin
       if debug then
-        write(L, string'("instruction invalid"));
+        write(L, string'("Invalid Instruction"));
         writeline(output, L);
       end if;
-      ----sim: finish(0);
-      --state := IF_0;
-      ExcCode := ExcRI;
-      exception;
-    end procedure;
-    
-    procedure bad_addr is
-    begin
-      if debug then
-        write(L, string'("bad address"));
-        writeline(output, L);
+
+      if EXL = '0' then
+        ExcCode := ExcRI;
+        exception;
       end if;
-      --sim: finish(0);
+      state := IF_0;
     end procedure;
-    
 
     procedure halt is
     begin
@@ -511,20 +509,47 @@ begin
       reg_debug(W, reg, data);
     end procedure;
     
+    procedure bad_addr (rw : RwType) is
+    begin
+      if debug then
+        write(L, string'("Bad Address"));
+        writeline(output, L);
+      end if;
+
+      if EXL = '0' then
+        if rw = R then
+          ExcCode := ExcAdEL;
+        else
+          ExcCode := ExcAdES;
+        end if;
+        exception;
+      end if;
+      state := IF_0;
+    end procedure;
+    
     procedure conv_mem_addr(
+      rw   : RwType;
+      len  : LenType;
       addr : std_logic_vector (31 downto 0)) is
     begin
-      case addr(31 downto 28) is
-        when x"8" | x"9" | x"A" | x"B" =>
-          --if mode = Kernel then
-            mmu_debug(addr, "000" & addr(28 downto 0));
-            mem_addr <= "000" & addr(28 downto 0);
-          --else
-            -- exception 
-          --end if;
-        when others =>
-          bad_addr;        
-      end case;
+      if addr(1 downto 0) = "00" or len = Lbyte or
+        (addr(0) = '0' and len = Lhalf) then
+        mem_rw     <= rw;
+        mem_length <= len;
+        case addr(31 downto 28) is
+          when x"8" | x"9" | x"A" | x"B" =>
+            if KSU = "00" or EXL = '1' then
+              mmu_debug(addr, "000" & addr(28 downto 0));
+              mem_addr <= "000" & addr(28 downto 0);
+            else
+              bad_addr(rw); -- no right
+            end if;
+          when others =>
+            bad_addr(rw); -- wrong address       
+        end case;
+      else
+        bad_addr(rw); -- wrong alignment
+      end if;
     end procedure;
     
   begin
@@ -538,6 +563,12 @@ begin
       mem_en <= '1';
       mem_rw <= R;
       reg_rw <= R;
+      
+      hi := Int32_Zero;
+      lo := Int32_Zero;
+      for i in 0 to 31 loop
+        cp0regs(i) := Int32_Zero;
+      end loop;
       
       -- setting initial values for cop0 regs
       SR(31 downto 28) := "0001";
@@ -554,7 +585,7 @@ begin
       print_state(state, seg7_l_num); -- Debug --
 
       -- fresh interupt bit
-      Count := std_logic_vector(unsigned(Count) + to_unsigned(1, 32));
+      Count := add(Count, 1);
       if Count = Compare then
         IP(7) := '1';
       end if;
@@ -570,7 +601,7 @@ begin
           reg_rw     <= R;
           -- renew pc
           pc         := npc;
-          npc        := std_logic_vector(unsigned(pc) + to_unsigned(4, 32));
+          npc        := add(pc, 4);
           
           -- throw exception if interupted
           if IE = '1' and EXL = '0' and ( (IP and IM) /= Int8_Zero) then
@@ -581,9 +612,7 @@ begin
           -- prepare to fetch an instruction
           fetch_debug(pc);
           mem_en     <= '0';
-          mem_rw     <= R;
-          mem_length <= Lword;
-          conv_mem_addr(pc);
+          conv_mem_addr(R, Lword, pc);
           state := IF_1;
         when IF_1 =>
           -- wait until fetching complete
@@ -606,6 +635,12 @@ begin
             when op_special =>
               case func is
                 when func_syscall =>
+                  if EXL = '0' then
+                    ExcCode := ExcSyscall;
+                    exception;
+                  end if;
+                  state := ID_0;
+                when func_break =>
                   halt;
                   state := HALT;
                 when func_jr | func_jalr =>
@@ -617,7 +652,7 @@ begin
                       reg_debug(R, reg_rdReg1, reg_rdData1);
                       npc := reg_rdData1;
                       if func = func_jalr then
-                        write_reg(rd, std_logic_vector(unsigned(pc) + to_unsigned(8, 32)));
+                        write_reg(rd, add(pc, 8));
                       end if;
                       state := IF_0;
                     when others =>
@@ -711,7 +746,8 @@ begin
                   state := WB_0;
                 when WB_0 =>
                   if alu_r(0) = '1' then
-                    npc := std_logic_vector(unsigned(pc) + to_unsigned(4, 32) + unsigned(resize((signed(imm) sll 2), 32)));
+                    npc := std_logic_vector(resize((signed(imm) sll 2), 32));
+                    npc := add(pc, npc, 4);
                   end if;
                   state := IF_0;
                 when others =>
@@ -727,7 +763,7 @@ begin
                     state := WB_0;
                   end if;
                 when WB_0 =>
-                  write_reg("11111", std_logic_vector(unsigned(pc) + to_unsigned(8, 32)));
+                  write_reg("11111", add(pc, 8));
                   state := IF_0;
                 when others =>
                   -- impossible
@@ -774,6 +810,8 @@ begin
                       if cp0reg_num = 11 then
                         -- write to Compare, clear interupt 7
                         IP(7) := '0';
+                      elsif cp0reg_num = 15 then
+                        EBase(31 downto 30) := "10";
                       end if;
                       state := IF_0;
                     when others =>
@@ -784,7 +822,11 @@ begin
                     state := IF_0;
                   elsif func = func_eret then
                     EXL   := '0';
-                    pc    := EPC;
+                    npc   := EPC;
+                    if debug then
+                      write(L, string'("Exception Return"));
+                      writeline(output, L);
+                    end if;
                     state := IF_0;
                   else
                     instr_invalid;
@@ -805,14 +847,12 @@ begin
                 when MEM_0 =>
                   alu_debug(alu_a, alu_b, alu_r);
                   mem_en   <= '0';
-                  mem_rw   <= R;
-                  conv_mem_addr(alu_r);
                   if op = op_lw then
-                    mem_length <= Lword;
+                    conv_mem_addr(R, Lword, alu_r);
                   elsif op = op_lh or op = op_lhu then
-                    mem_length <= Lhalf;
+                    conv_mem_addr(R, Lhalf, alu_r);
                   else
-                    mem_length <= Lbyte;
+                    conv_mem_addr(R, Lbyte, alu_r);
                   end if;
                   state := MEM_1;
                 when MEM_1 =>
@@ -848,16 +888,13 @@ begin
                 when MEM_0 =>
                   alu_debug(alu_a, alu_b, alu_r);
                   mem_en      <= '0';
-                  mem_rw      <= W;
                   mem_data_in <= reg_rdData2;
-                  conv_mem_addr(alu_r);
-                  
                   if op = op_sw then
-                    mem_length <= Lword;
+                    conv_mem_addr(W, Lword, alu_r); 
                   elsif op = op_sh then
-                    mem_length <= Lhalf;
+                    conv_mem_addr(W, Lhalf, alu_r); 
                   else
-                    mem_length <= Lbyte;
+                    conv_mem_addr(W, Lbyte, alu_r); 
                   end if;
                   state := MEM_1;
                 when MEM_1 =>

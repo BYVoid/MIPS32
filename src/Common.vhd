@@ -88,6 +88,7 @@ package Common is
   constant func_jr      : Int6 := "001000";
   constant func_jalr    : Int6 := "001001";
   constant func_syscall : Int6 := "001100";
+  constant func_break   : Int6 := "001101";
   constant func_mfhi    : Int6 := "010000";
   constant func_mthi    : Int6 := "010001";
   constant func_mflo    : Int6 := "010010";
@@ -178,6 +179,10 @@ package Common is
 
   function boolean_to_std_logic(cond : boolean) return std_logic;
   function to_hex_string(data_in     : std_logic_vector) return string;
+  
+  function add(a, b : Int32) return Int32;
+  function add(a: Int32; b: integer) return Int32;
+  function add(a, b : Int32; c: integer) return Int32;
 
 end Common;
 
@@ -237,4 +242,19 @@ package body Common is
     end if;
     return "";
   end function to_hex_string;
+  
+  function add(a, b : Int32) return Int32 is
+  begin
+    return(std_logic_vector(unsigned(a) + unsigned(b)));
+  end function add;
+  
+  function add(a: Int32; b: integer) return Int32 is
+  begin
+    return(std_logic_vector(unsigned(a) + to_unsigned(b, 32)));
+  end function add;
+  
+  function add(a, b : Int32; c: integer) return Int32 is
+  begin
+    return (add( add(a, b) , c ));
+  end function add;
 end Common;
