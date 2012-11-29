@@ -12,6 +12,7 @@ int main(int argc, char *argv[])
 	FILE *fout2 = fopen(argv[3], "w");
 	unsigned startaddr;
 	sscanf(argv[4], "%x", &startaddr);
+	startaddr /= 4;
 	
 	for (int i = 0;; i++) {
 		unsigned b;

@@ -37,7 +37,6 @@ if ($ex -eq $null) {
   # compile, -EL for little endien, -g for not strip the NOP after branch
   mips-sde-elf-as -EL -g -mips32 $filein -o "$fileout.o"
   # link, -Ttext to set start address for text segment 
-  #$startaddr = "0x80000180"
   mips-sde-elf-ld -EL -e $startaddr -Ttext $startaddr "$fileout.o" -o "$fileout.out"
   mips-sde-elf-objcopy -O binary "$fileout.out" "$fileout.bin"
   # disassemble
@@ -75,7 +74,7 @@ if ($ex -eq $null) {
   
   cat "$fileout.1.ram1.data" | out-file -encoding ascii "$fileout.ram1.data"
   $start = (cat "$fileout.1.ram1.data").count
-  $end = [int]$phyexstartaddr
+  $end = ([int]$phyexstartaddr) / 4
   for ($i = $start; $i -lt $end; $i++) {
     $addr = $i.ToString('x')
     echo "$addr=0000" | out-file -encoding ascii "$fileout.ram1.data" -append
@@ -84,7 +83,7 @@ if ($ex -eq $null) {
   
   cat "$fileout.1.ram2.data" | out-file -encoding ascii "$fileout.ram2.data"
   $start = (cat "$fileout.1.ram2.data").count
-  $end = [int]$phyexstartaddr
+  $end = ([int]$phyexstartaddr) / 4
   for ($i = $start; $i -lt $end; $i++) {
     $addr = $i.ToString('x')
     echo "$addr=0000" | out-file -encoding ascii "$fileout.ram2.data" -append

@@ -5,22 +5,15 @@ start:
   jal init
   nop
   
-  la $s0, 0xbfd003f8
-  la $s1, 0xbfd003fc
-  
-  li $a0, 0x12
 joop:
-  jal write_com
-  nop
   j joop
   nop
   # never reach here
 
-
 init:
 
   # set exception return base (EBase)
-  la $t1, 0x800b0000  
+  la $t1, 0x80000000  
   mfc0 $t0, $15
   or   $t0, $t1
   mtc0 $t0, $15
@@ -38,19 +31,9 @@ init:
   
   jr $ra
   nop
-  
-write_com:
-  li $t1, 1
-  loop:
-  lw $t0, 0($s1)
-  andi $t0, $t0, 1
-  bne $t0, $t1, loop
-  sw $a0, 0($s0)
-  jr $ra
-  nop
 
   
-# ex_handler @ 0x800b0180
+# ex_handler @ 0x80000180
 .set noreorder
 start:
   .text 0
@@ -66,9 +49,9 @@ start:
   ori  $a0, $k0, 0   # restore $a0
   ori  $ra, $k1, 0   # restore $ra
   
-  # set Compare to Count + 300
+  # set Compare to Count + some time
   mfc0 $t0, $9
-  addu $t0, $t0, 300
+  addu $t0, $t0, 50000000
   mtc0 $t0, $11
   
   eret
@@ -82,6 +65,3 @@ write_com:
   sw $a0, 0($s0)
   jr $ra
   nop
-
-
-
