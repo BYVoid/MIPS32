@@ -12,7 +12,7 @@ start:
 joop:
   jal write_com
   nop
-  j loop
+  j joop
   nop
   # never reach here
 
