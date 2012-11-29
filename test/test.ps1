@@ -33,13 +33,14 @@ if (!(test-path $filein)) {
 # extract out the file extension
 $fileout = $filein -replace('\.\w+$', '')
 
+$ex = $null
 select-string '^# ?ex_handler ?@ ?(\w+) ?$' -Path $filein | 
 %{$ex = $_.matches.count
   $exline = $_.linenumber
   $exstartaddr = $_.matches[0].groups[1].value
 }
 
-if ($ex -ne 1) {
+if ($ex -eq $null) {
   # compile, -EL for little endien, -g for not strip the NOP after branch
   mips-sde-elf-as -EL -g -mips32 $filein -o "$fileout.o"
   # link, -Ttext to set start address for text segment 
@@ -49,7 +50,7 @@ if ($ex -ne 1) {
   
   rm "$fileout.o"
   rm "$fileout.out"
-} else {
+} elseif ($ex -eq 1) {
   $line = (cat $filein).count
   (cat $filein)[0..($exline-2)] | out-file -encoding ascii "$fileout.1.s"
   (cat $filein)[$exline..($line-1)] | out-file -encoding ascii "$fileout.2.s"
@@ -66,6 +67,9 @@ if ($ex -ne 1) {
   rm "$fileout.2.s"
   rm "$fileout.2.o"
   rm "$fileout.2.out" 
+} else {
+  echo "Can't handle more than one of ex_handler"
+  exit
 }
 
 # convert to .dat format
