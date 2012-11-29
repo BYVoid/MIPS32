@@ -564,21 +564,22 @@ begin
       rw   : RwType;
       addr : std_logic_vector (31 downto 0)) is
       variable found : boolean;
-      variable     i : integer;
+      variable   pos : integer;
     begin
       found := false;
       for i in 0 to 15 loop
         if addr(31 downto 13) = tlb(i)(62 downto 44) then
           found := true;
+          pos := i;
           exit;
         end if;
       end loop;
 
       if found then
-        if addr(12) = '0' and tlb(i)(0) = '1' then
-          mem_addr <= tlb(i)(21 downto 2) & addr(11 downto 0);
-        elsif addr(12) = '1' and tlb(i)(22) = '1' then
-          mem_addr <= tlb(i)(43 downto 24) & addr(11 downto 0);
+        if addr(12) = '0' and tlb(pos)(0) = '1' then
+          mem_addr <= tlb(pos)(21 downto 2) & addr(11 downto 0);
+        elsif addr(12) = '1' and tlb(pos)(22) = '1' then
+          mem_addr <= tlb(pos)(43 downto 24) & addr(11 downto 0);
         else
           found := false;
         end if;
@@ -608,7 +609,7 @@ begin
             end if;
           when x"0" | x"1" | x"2" | x"3" |
                x"4" | x"5" | x"6" | x"7" =>
-            gettlb(rw, addr);   
+            gettlb(rw, addr);
           when x"C" | x"D" | x"E" | x"F" =>
             if KSU = "00" or EXL = '1' then
               gettlb(rw, addr);
@@ -897,7 +898,7 @@ begin
                   end case;
                 when rs_co =>
                   if func = func_tlbwi then
-                    idx   := to_integer(unsigned(Index));
+                    idx   := to_integer(unsigned(Index(3 downto 0)));
                     tlb(idx)(62 downto 44) := VPN2;
                     tlb(idx)(43 downto 24) := EntryLo1(25 downto 6);
                     tlb(idx)(23 downto 22) := EntryLo1(2 downto 1);
