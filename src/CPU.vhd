@@ -13,6 +13,7 @@ entity CPU is
     clk : in std_logic;
     rst : in std_logic;
     start_addr : std_logic_vector (31 downto 0);
+    addr_sw: in std_logic;
 
     -- Memory
     mem_en        : out std_logic                      := '1';
@@ -208,7 +209,6 @@ begin
       EXL   := '1';
       EPC   := pc;
       npc   := add("10" & ExcBase & "000000000000", 16#180#);
-      led <= npc(15 downto 0);
       if debug then
         write(L, string'("Exception (ExcCode:"));
         write(L, to_integer(unsigned(ExcCode)));
@@ -564,7 +564,7 @@ begin
       rw   : RwType;
       addr : std_logic_vector (31 downto 0)) is
       variable found : boolean;
-      variable     i : integer;
+      variable     i : integer := 0;
     begin
       found := false;
       for i in 0 to 15 loop
@@ -657,6 +657,11 @@ begin
       
     elsif rising_edge(clk) then
       print_state(state, seg7_l_num); -- Debug --
+      if addr_sw = '0' then
+        led <= pc(15 downto 0);
+      else
+        led <= pc(31 downto 16);
+      end if;
 
       -- fresh interupt bit
       Count := add(Count, 1);
@@ -695,7 +700,6 @@ begin
             mem_en <= '1';
             instr  := mem_data_out;
             state  := ID_0;
-            led <= instr(31 downto 16);
           end if;
         when others =>
           if state = ID_0 then
@@ -704,7 +708,6 @@ begin
             alu_op   <= op;
             alu_func <= func;
             alu_rt   <= rt;
-            led <= instr(15 downto 0);
           end if;
           -- ID_0, EX_0, MEM_0, MEM_1, WB_0 for each instruction
           case op is
@@ -897,7 +900,7 @@ begin
                   end case;
                 when rs_co =>
                   if func = func_tlbwi then
-                    idx   := to_integer(unsigned(Index));
+                    idx   := to_integer(unsigned(Index(3 downto 0)));
                     tlb(idx)(62 downto 44) := VPN2;
                     tlb(idx)(43 downto 24) := EntryLo1(25 downto 6);
                     tlb(idx)(23 downto 22) := EntryLo1(2 downto 1);

@@ -56,6 +56,7 @@ architecture Behavioral of System is
       clk : in std_logic;
       rst : in std_logic;
       start_addr : std_logic_vector (31 downto 0);
+      addr_sw: in std_logic;
 
       -- RAM
       mem_en       : out std_logic;
@@ -128,8 +129,9 @@ architecture Behavioral of System is
     );
   end component;
 
-  signal clk: std_logic;
-  signal clk_demul: std_logic;
+  signal clk          : std_logic;
+  signal clk_half     : std_logic;
+  signal clk_debug    : std_logic;
   signal start_addr   : Int32;
   signal mem_en       : std_logic;
   signal mem_rw       : RwType;
@@ -145,15 +147,16 @@ architecture Behavioral of System is
   
 begin
   clk <= clk_key    when switch(3 downto 2) = "00" else
-         clk0       when switch(3 downto 2) = "01" else
-         clk_demul  when switch(3 downto 2) = "10" else
+         clk_debug  when switch(3 downto 2) = "01" else
+         clk_half   when switch(3 downto 2) = "10" else
          clk1;
 
   start_addr <= RAM_START when switch(1 downto 0) = "00" else
                 ROM_START when switch(1 downto 0) = "01" else
-                x"80000180";
+                x"BFC00064";
 
-  demultiplied_clock: ClockDemul port map (clk1, rst, 2, clk_demul);
+  half_clock: ClockDemul port map (clk1, rst, 2, clk_half);
+  debug_clock: ClockDemul port map (clk1, rst, 500, clk_debug);
 
   Seg7_1 : Seg7
     port map (
@@ -175,6 +178,8 @@ begin
       clk          => clk,
       rst          => rst,
       start_addr   => start_addr,
+      addr_sw      => switch(4),
+      
       mem_en       => mem_en,
       mem_rw       => mem_rw,
       mem_length   => mem_length,

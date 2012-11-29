@@ -64,6 +64,7 @@ architecture Behavioral of Memory is
     RAM_WRITE_BYTE_2,
     COM_READ,
     COM_WRITE,
+    COM_WRITE_1,
     FLASH_READ,
     FLASH_READ_1,
     FLASH_WRITE
@@ -322,10 +323,12 @@ begin
     when INITIAL =>
       ram1_en <= '1';
       ram1_oe <= '1';
-      com_wrn <= '0';
       com_data <= data_in(7 downto 0);
       state <= COM_WRITE;
     when COM_WRITE =>
+      com_wrn <= '0';
+      state <= COM_WRITE_1;
+    when COM_WRITE_1 =>
       com_wrn <= '1';
       completed <= '1';
       state <= STOPPED;
