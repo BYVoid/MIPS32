@@ -224,7 +224,6 @@ begin
           if en = '0' then
             if addr(31 downto 20) = x"000" then
               -- RAM
-              addr_int := to_integer(unsigned(addr));
               if rw = R then
                 state := RAM_READ;
               else
@@ -250,6 +249,7 @@ begin
             end if;
           end if;
         when RAM_READ =>
+          addr_int := to_integer(unsigned(addr));
           -- Read ram
           case length is
             when Lword =>
@@ -273,6 +273,7 @@ begin
           completed <= '1';
           state     := COMPLETE;
         when RAM_WRITE =>
+          addr_int := to_integer(unsigned(addr));
           case length is
             when Lword =>
               ram(addr_int)   := data_in(7 downto 0);
