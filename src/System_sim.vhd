@@ -8,11 +8,11 @@ end System_sim;
 architecture Behavioral of System_sim is
   component CPU
     generic (
-      debug      : boolean;
-      start_addr : std_logic_vector (31 downto 0));
+      debug      : boolean);
     port (
       clk : in std_logic;
       rst : in std_logic;
+      start_addr : std_logic_vector (31 downto 0);
 
       -- Memory
       mem_en        : out std_logic;
@@ -64,12 +64,12 @@ architecture Behavioral of System_sim is
 begin
   CPU_1 : CPU
     generic map (
-      debug      => true,
-      start_addr => RAM_START
+      debug      => true
     )
     port map (
       clk           => clk,
       rst           => rst,
+      start_addr    => RAM_START,
       mem_en        => mem_en,
       mem_rw        => mem_rw,
       mem_length    => mem_length,

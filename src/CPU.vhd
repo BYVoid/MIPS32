@@ -7,12 +7,12 @@ use work.Common.all;
 
 entity CPU is
   generic (
-    debug      : boolean;
-    start_addr : std_logic_vector (31 downto 0)
+    debug      : boolean
     );
   port (
     clk : in std_logic;
     rst : in std_logic;
+    start_addr : std_logic_vector (31 downto 0);
 
     -- Memory
     mem_en        : out std_logic                      := '1';
@@ -202,6 +202,7 @@ begin
       EXL   := '1';
       EPC   := pc;
       npc   := add("10" & ExcBase & "000000000000", 16#180#);
+      led <= npc(15 downto 0);
       if debug then
         write(L, string'("Exception (ExcCode:"));
         write(L, to_integer(unsigned(ExcCode)));
@@ -628,6 +629,7 @@ begin
             mem_en <= '1';
             instr  := mem_data_out;
             state  := ID_0;
+            led <= instr(31 downto 16);
           end if;
         when others =>
           if state = ID_0 then
@@ -636,6 +638,7 @@ begin
             alu_op   <= op;
             alu_func <= func;
             alu_rt   <= rt;
+            led <= instr(15 downto 0);
           end if;
           -- ID_0, EX_0, MEM_0, MEM_1, WB_0 for each instruction
           case op is

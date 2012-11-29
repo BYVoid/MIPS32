@@ -51,11 +51,11 @@ end System;
 architecture Behavioral of System is
   component CPU
     generic (
-      debug      : boolean;
-      start_addr : std_logic_vector (31 downto 0));
+      debug      : boolean);
     port (
       clk : in std_logic;
       rst : in std_logic;
+      start_addr : std_logic_vector (31 downto 0);
 
       -- RAM
       mem_en       : out std_logic;
@@ -129,6 +129,8 @@ architecture Behavioral of System is
   end component;
 
   signal clk: std_logic;
+  signal clk_demul: std_logic;
+  signal start_addr   : Int32;
   signal mem_en       : std_logic;
   signal mem_rw       : RwType;
   signal mem_length   : LenType;
@@ -142,8 +144,13 @@ architecture Behavioral of System is
   signal seg7_r_num : Int4;
   
 begin
-  --clk <= clk_key;
-  demultiplied_clock: ClockDemul port map (clk1, rst, 2, clk);
+  clk <= clk_key when switch(2) = '0' else clk_demul;
+
+  start_addr <= RAM_START when switch(1 downto 0) = "00" else
+                ROM_START when switch(1 downto 0) = "01" else
+                x"80000180";
+
+  demultiplied_clock: ClockDemul port map (clk1, rst, 2, clk_demul);
 
   Seg7_1 : Seg7
     port map (
@@ -159,12 +166,12 @@ begin
 
   CPU_1 : CPU
     generic map (
-      debug      => false,
-      start_addr => ROM_START
+      debug      => false
     )
     port map (
       clk          => clk,
       rst          => rst,
+      start_addr   => start_addr,
       mem_en       => mem_en,
       mem_rw       => mem_rw,
       mem_length   => mem_length,

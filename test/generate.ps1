@@ -37,6 +37,7 @@ if ($ex -eq $null) {
   # compile, -EL for little endien, -g for not strip the NOP after branch
   mips-sde-elf-as -EL -g -mips32 $filein -o "$fileout.o"
   # link, -Ttext to set start address for text segment 
+  #$startaddr = "0x80000180"
   mips-sde-elf-ld -EL -e $startaddr -Ttext $startaddr "$fileout.o" -o "$fileout.out"
   mips-sde-elf-objcopy -O binary "$fileout.out" "$fileout.bin"
   # disassemble
@@ -47,7 +48,7 @@ if ($ex -eq $null) {
     ./bintocoe "$fileout.bin" "$fileout.coe"
   } elseif ($target -eq "-ram") {
     # generate data file
-    ./bintodata "$fileout.bin" "$fileout.ram1.data" "$fileout.ram2.data"
+    ./bintodata "$fileout.bin" "$fileout.ram1.data" "$fileout.ram2.data" $startaddr.replace("0x8", "0x0").replace("0x9", "0x1")
   } 
 
   rm "$fileout.o"
@@ -65,8 +66,31 @@ if ($ex -eq $null) {
   mips-sde-elf-objcopy -O binary "$fileout.2.out" "$fileout.2.bin"
   mips-sde-elf-objdump -EL -S --prefix-addresses --show-raw-insn "$fileout.1.out" | out-file -encoding ascii "$fileout.ram.code"
   mips-sde-elf-objdump -EL -S --prefix-addresses --show-raw-insn "$fileout.2.out" | out-file -encoding ascii "$fileout.ram.code" -append
-  ./bintodata "$fileout.1.bin" "$fileout.1.ram1.data" "$fileout.1.ram2.data"
-  ./bintodata "$fileout.2.bin" "$fileout.2.ram1.data" "$fileout.2.ram2.data"
+  
+  $phystartaddr = $startaddr.replace("0x8", "0x0").replace("0x9", "0x1")
+  $phyexstartaddr = $exstartaddr.replace("0x8", "0x0").replace("0x9", "0x1")
+  
+  ./bintodata "$fileout.1.bin" "$fileout.1.ram1.data" "$fileout.1.ram2.data" $phystartaddr
+  ./bintodata "$fileout.2.bin" "$fileout.2.ram1.data" "$fileout.2.ram2.data" $phyexstartaddr
+  
+  cat "$fileout.1.ram1.data" | out-file -encoding ascii "$fileout.ram1.data"
+  $start = (cat "$fileout.1.ram1.data").count
+  $end = [int]$phyexstartaddr
+  for ($i = $start; $i -lt $end; $i++) {
+    $addr = $i.ToString('x')
+    echo "$addr=0000" | out-file -encoding ascii "$fileout.ram1.data" -append
+  }
+  cat "$fileout.2.ram1.data" | out-file -encoding ascii "$fileout.ram1.data" -append
+  
+  cat "$fileout.1.ram2.data" | out-file -encoding ascii "$fileout.ram2.data"
+  $start = (cat "$fileout.1.ram2.data").count
+  $end = [int]$phyexstartaddr
+  for ($i = $start; $i -lt $end; $i++) {
+    $addr = $i.ToString('x')
+    echo "$addr=0000" | out-file -encoding ascii "$fileout.ram2.data" -append
+  }
+  cat "$fileout.2.ram2.data" | out-file -encoding ascii "$fileout.ram2.data" -append
+  
   rm "$fileout.1.s"
   rm "$fileout.1.o"
   rm "$fileout.1.out"
@@ -75,6 +99,10 @@ if ($ex -eq $null) {
   rm "$fileout.2.o"
   rm "$fileout.2.out"
   rm "$fileout.2.bin"
+  rm "$fileout.1.ram1.data"
+  rm "$fileout.2.ram1.data"
+  rm "$fileout.1.ram2.data"
+  rm "$fileout.2.ram2.data"
 } else {
   echo "Can't handle neither more than one of ex_handler, nor ex_handler for rom"
   exit
