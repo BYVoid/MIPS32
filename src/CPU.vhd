@@ -563,25 +563,30 @@ begin
     procedure gettlb(
       rw   : RwType;
       addr : std_logic_vector (31 downto 0)) is
+      variable found : boolean;
+      variable     i : integer;
     begin
+      found := false;
       for i in 0 to 15 loop
         if addr(31 downto 13) = tlb(i)(62 downto 44) then
-          if addr(12) = '0' then
-            if tlb(i)(0) = '1' then
-              mem_addr <= tlb(i)(21 downto 2) & addr(11 downto 0);
-            else
-              tlb_refill(rw, addr);
-            end if;
-          else
-            if tlb(i)(22) = '1' then
-              mem_addr <= tlb(i)(43 downto 24) & addr(11 downto 0);
-            else
-              tlb_refill(rw, addr);
-            end if;
-          end if;
+          found := true;
+          exit;
         end if;
       end loop;
-      tlb_refill(rw, addr);
+
+      if found then
+        if addr(12) = '0' and tlb(i)(0) = '1' then
+          mem_addr <= tlb(i)(21 downto 2) & addr(11 downto 0);
+        elsif addr(12) = '1' and tlb(i)(22) = '1' then
+          mem_addr <= tlb(i)(43 downto 24) & addr(11 downto 0);
+        else
+          found := false;
+        end if;
+      end if;
+      
+      if not found then
+        tlb_refill(rw, addr);
+      end if;
     end procedure;
     
     procedure conv_mem_addr(
