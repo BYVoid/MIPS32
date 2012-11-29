@@ -526,7 +526,7 @@ begin
         write(L, string'("Bad Address"));
         writeline(output, L);
       end if;
-
+      mem_en <= '1';
       if EXL = '0' then
         if rw = R then
           ExcCode := ExcAdEL;

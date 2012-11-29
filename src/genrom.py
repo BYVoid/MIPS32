@@ -13,7 +13,7 @@ entity Rom is
 end Rom;
 
 architecture Behavioral of Rom is
-  constant NUM_ROM_CELLS: integer := 1024;
+  constant NUM_ROM_CELLS: integer := 128;
   type RomType is array(0 to NUM_ROM_CELLS - 1) of Int32;
   signal rom: RomType;
 begin
