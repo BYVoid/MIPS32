@@ -118,6 +118,7 @@ begin
       WB_0                              -- Write Back
       );
     type Cp0RegsType is array(0 to 31) of Int32;
+    type TlbType is array(0 to 15) of std_logic_vector(62 downto 0);
 
     variable state   : StateType;
     variable L       : line;
@@ -125,7 +126,9 @@ begin
     variable instr   : Int32;   
     variable hi, lo  : Int32;
     variable cp0regs : Cp0RegsType;
+    variable tlb     : TlbType;
     
+    variable idx        : integer range 0 to 15;
     variable cp0reg_num : integer range 0 to 31;
 
     alias op          : Int6 is instr(31 downto 26);
@@ -161,7 +164,10 @@ begin
     
     -- EBase
     alias ExcBase : std_logic_vector(17 downto 0) is cp0regs(15)(29 downto 12);
-   
+    
+    -- EntryHi
+    alias VPN2 : std_logic_vector(18 downto 0) is cp0regs(10)(31 downto 13);
+
     procedure print_state(
       state: in StateType;
       signal seg7_l_num: out Int4) is
@@ -535,6 +541,49 @@ begin
       state := IF_0;
     end procedure;
     
+    procedure tlb_refill(
+      rw   : RwType;
+      addr : std_logic_vector (31 downto 0)) is
+    begin
+      if EXL = '0' then
+        if rw = R then
+          ExcCode := ExcTLBL;
+        else
+          ExcCode := ExcTLBS;
+        end if;
+        BadVAddr := addr;
+        VPN2 := addr(31 downto 13);
+        exception;
+      else
+        halt;
+      end if;
+      state := IF_0;
+    end procedure;    
+    
+    procedure gettlb(
+      rw   : RwType;
+      addr : std_logic_vector (31 downto 0)) is
+    begin
+      for i in 0 to 15 loop
+        if addr(31 downto 13) = tlb(i)(62 downto 44) then
+          if addr(12) = '0' then
+            if tlb(i)(0) = '1' then
+              mem_addr <= tlb(i)(21 downto 2) & addr(11 downto 0);
+            else
+              tlb_refill(rw, addr);
+            end if;
+          else
+            if tlb(i)(22) = '1' then
+              mem_addr <= tlb(i)(43 downto 24) & addr(11 downto 0);
+            else
+              tlb_refill(rw, addr);
+            end if;
+          end if;
+        end if;
+      end loop;
+      tlb_refill(rw, addr);
+    end procedure;
+    
     procedure conv_mem_addr(
       rw   : RwType;
       len  : LenType;
@@ -549,6 +598,15 @@ begin
             if KSU = "00" or EXL = '1' then
               mmu_debug(addr, "000" & addr(28 downto 0));
               mem_addr <= "000" & addr(28 downto 0);
+            else
+              bad_addr(rw, addr); -- no right
+            end if;
+          when x"0" | x"1" | x"2" | x"3" |
+               x"4" | x"5" | x"6" | x"7" =>
+            gettlb(rw, addr);   
+          when x"C" | x"D" | x"E" | x"F" =>
+            if KSU = "00" or EXL = '1' then
+              gettlb(rw, addr);
             else
               bad_addr(rw, addr); -- no right
             end if;
@@ -576,6 +634,9 @@ begin
       lo := Int32_Zero;
       for i in 0 to 31 loop
         cp0regs(i) := Int32_Zero;
+      end loop;
+      for i in 0 to 15 loop
+        tlb(i) := Int32_Zero & Int31_Zero;
       end loop;
       
       -- setting initial values for cop0 regs
@@ -619,8 +680,8 @@ begin
             -- prepare to fetch an instruction
             fetch_debug(pc);
             mem_en     <= '0';
-            conv_mem_addr(R, Lword, pc);
             state := IF_1;
+            conv_mem_addr(R, Lword, pc);
           end if;
         when IF_1 =>
           -- wait until fetching complete
@@ -831,6 +892,12 @@ begin
                   end case;
                 when rs_co =>
                   if func = func_tlbwi then
+                    idx   := to_integer(unsigned(Index));
+                    tlb(idx)(62 downto 44) := VPN2;
+                    tlb(idx)(43 downto 24) := EntryLo1(25 downto 6);
+                    tlb(idx)(23 downto 22) := EntryLo1(2 downto 1);
+                    tlb(idx)(21 downto 2) := EntryLo0(25 downto 6);
+                    tlb(idx)(1 downto 0) := EntryLo0(2 downto 1);
                     state := IF_0;
                   elsif func = func_eret then
                     EXL   := '0';
@@ -859,6 +926,7 @@ begin
                 when MEM_0 =>
                   alu_debug(alu_a, alu_b, alu_r);
                   mem_en   <= '0';
+                  state := MEM_1;
                   if op = op_lw then
                     conv_mem_addr(R, Lword, alu_r);
                   elsif op = op_lh or op = op_lhu then
@@ -866,7 +934,6 @@ begin
                   else
                     conv_mem_addr(R, Lbyte, alu_r);
                   end if;
-                  state := MEM_1;
                 when MEM_1 =>
                   -- wait until loading complete
                   if mem_completed = '1' then
@@ -901,6 +968,7 @@ begin
                   alu_debug(alu_a, alu_b, alu_r);
                   mem_en      <= '0';
                   mem_data_in <= reg_rdData2;
+                  state := MEM_1;
                   if op = op_sw then
                     conv_mem_addr(W, Lword, alu_r); 
                   elsif op = op_sh then
@@ -908,7 +976,6 @@ begin
                   else
                     conv_mem_addr(W, Lbyte, alu_r); 
                   end if;
-                  state := MEM_1;
                 when MEM_1 =>
                   -- wait until storing complete
                   if mem_completed = '1' then
