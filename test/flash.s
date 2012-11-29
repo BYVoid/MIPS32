@@ -13,6 +13,7 @@ __start:
   move $a0, $v0
   jal wrtie_word_com
   nop
+  break
 
 /* off = offset from s0 */
 /* load a 32bit word from Flash, 
