@@ -144,7 +144,10 @@ architecture Behavioral of System is
   signal seg7_r_num : Int4;
   
 begin
-  clk <= clk_key when switch(2) = '0' else clk_demul;
+  clk <= clk_key    when switch(3 downto 2) = "00" else
+         clk0       when switch(3 downto 2) = "01" else
+         clk_demul  when switch(3 downto 2) = "10" else
+         clk1;
 
   start_addr <= RAM_START when switch(1 downto 0) = "00" else
                 ROM_START when switch(1 downto 0) = "01" else
