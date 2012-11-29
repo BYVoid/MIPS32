@@ -65,6 +65,7 @@ architecture Behavioral of Memory is
     COM_READ,
     COM_WRITE,
     FLASH_READ,
+    FLASH_READ_1,
     FLASH_WRITE
   );
 
@@ -348,6 +349,8 @@ begin
       flash_data <= Int16_Z;
       state <= FLASH_READ;
     when FLASH_READ =>
+      state <= FLASH_READ_1;
+    when FLASH_READ_1 =>
       data_out(15 downto 0) <= flash_data;
       data_out(31 downto 16) <= Int16_Zero;
       completed <= '1';
