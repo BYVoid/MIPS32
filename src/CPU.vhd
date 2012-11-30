@@ -229,7 +229,7 @@ begin
         ExcCode := ExcRI;
         exception;
       else
-        halt;
+--        halt;
       end if;
       state := IF_0;
     end procedure;
@@ -536,7 +536,7 @@ begin
         BadVAddr := addr;
         exception;
       else
-        halt;
+--        halt;
       end if;
       state := IF_0;
     end procedure;
@@ -545,6 +545,7 @@ begin
       rw   : RwType;
       addr : std_logic_vector (31 downto 0)) is
     begin
+      mem_en <= '1';
       if EXL = '0' then
         if rw = R then
           ExcCode := ExcTLBL;
@@ -555,7 +556,7 @@ begin
         VPN2 := addr(31 downto 13);
         exception;
       else
-        halt;
+--        halt;
       end if;
       state := IF_0;
     end procedure;    
